@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" style="background-color: black;">
+<head>
+    <meta charset="UTF-8">
+    <title>Ai Financial Advisor</title>
+    <script src="static/js/ai.js"></script>
+    <script src="static/js/banks.js"></script>
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+</head>
+<body>
+
+    <center>
+        <h1 style="color: white; font-size: 75px; font-family: verdana;">Ai Financial Advisor</h1>
+
+
+        <div style="background-color: gray; width: 90%; max-width: 1400px; padding: 30px; margin-bottom: 60px; border-radius: 10px; margin: auto;">
+
+            <div class="logs" id="logs" style="margin-bottom: 20px; width: 100%; height: 500px; overflow-y: scroll; position: relative;" >
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 5px; align-items: flex-start;">
+                    <div style="color: white; width: fit-content; max-width: 500px; padding: 5px; background-color: black; border-radius: 8px; font-family: verdana;">{{ai | safe}}</div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 5px; align-items: flex-start; margin-top: 30px;">
+                    <div style="color: white; width: fit-content; max-width: 500px; padding: 5px; background-color: black; border-radius: 8px; font-family: verdana;">
+                        <h1>CONNECT YOUR BANK</h1>
+                        <img src="../static/assets/img/white bank.png" width="100" height="50" id="openPlaid" onclick="bank()" style="cursor: pointer;">
+                    </div>
+
+                    <div style="color: white; width: fit-content; max-width: 500px; padding: 5px; background-color: black; border-radius: 8px; margin-left:10px; font-family: verdana;">
+                        <h1>UPLOAD YOUR FILES</h1>
+                        <label for="file">
+                            <img src="../static/assets/img/white upload.png" width="50" style="cursor: pointer;">
+                        </label>
+                        <input type="file" name="pdf" id="file" accept="application/pdf" style="display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex;">
+                <img src="../static/assets/img/bank.png" width="100" height="50" id="openPlaid2" onclick="bank()">
+                <label for="file">
+                    <img src="../static/assets/img/upload.png" width="50" style="cursor: pointer;">
+                </label>
+                <input type="file" name="pdf" id="file2" accept="application/pdf" style="display: none;">
+
+                <input type="text" id="text" placeholder="Type a message..." style="width: 1200px; margin-left: 30px;"/>
+            </div>
+
+            <div style="margin-top: 5px;"></div>
+
+            <img id="press" src="../static/assets/img/up.png" style="width: 50px; height: 50px; cursor: pointer;" onclick="update()">
+
+        </div>
+
+
+
+    </center>
+
+
+</body>
+</html>
+
+</body>
+</html>
