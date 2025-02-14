@@ -121,7 +121,7 @@ def get_transactions(token):
 
     category_totals = defaultdict(float)
     for statement in response:
-        print()
+        print(statement)
 
         category = statement.get("personal_finance_category")
         category = category.get("primary")
@@ -132,6 +132,7 @@ def get_transactions(token):
         if statement.get("amount", 0) < 0:
             transactions.append({
                 "name": statement.get("name", "Unknown"),
+                "date": statement.get("date"),
                 "amount": statement.get("amount", 0),
                 "category": category,
                 "type": "deposit"
