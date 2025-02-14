@@ -140,6 +140,7 @@ def get_transactions(token):
         else:
             transactions.append({
                 "name": statement.get("name", "Unknown"),
+                "date": statement.get("date"),
                 "amount": statement.get("amount", 0),
                 "category": category,
                 "type": "withdrawal"
