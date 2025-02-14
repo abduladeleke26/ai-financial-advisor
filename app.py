@@ -385,7 +385,7 @@ def token():
     if "access_token" in trans:
         session.clear()
         t = trans["access_token"]
-        time.sleep(5)
+        time.sleep(15)
         transactions, categorize = get_transactions(t)
         categories = categorize
         banksss = transactions
