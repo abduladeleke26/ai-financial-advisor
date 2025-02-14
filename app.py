@@ -208,6 +208,10 @@ def clear_session_on_refresh():
 
 @app.route('/')
 def home():
+    global categories
+    global current
+    categories = None
+    current = "empty"
     if "conversation" not in session:
         session["conversation"] = []
     session.permanent = True
