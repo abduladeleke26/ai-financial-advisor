@@ -4,10 +4,13 @@ async function update() {
     let user = document.getElementById("text").value;
     let file = document.getElementById("file");
     let logs = document.getElementById("logs");
+
+    if (!user.trim() && !file.files.length) return;
+
     document.getElementById("press").src = "../static/assets/img/loading.gif";
     document.getElementById("press").style.cursor = "default";
     document.getElementById("press").style.pointerEvents = "none";
-    if (!user.trim() && !file.files.length) return;
+
 
 
 

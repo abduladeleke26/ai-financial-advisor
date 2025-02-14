@@ -121,7 +121,7 @@ def get_transactions(token):
 
     category_totals = defaultdict(float)
     for statement in response:
-        print(statement)
+
 
         category = statement.get("personal_finance_category")
         category = category.get("primary")
@@ -221,7 +221,7 @@ def home():
     )
 
     begin = greeting.choices[0].message.content
-    print(begin)
+
 
 
     return render_template('index.html',ai = begin)
@@ -238,15 +238,14 @@ def advice():
     if "conversation" not in session:
         session["conversation"] = []
 
-    print("Session Data Before:", session.get("conversation", []))
+
 
     if categories:
-        print("yes")
+
         text_input = request.form.get("text")
 
 
-        print(categories)
-        print(current)
+
         if current == categories:
             if text_input:
                 session["conversation"].append({"role": "user", "content": str(banksss)})
@@ -275,17 +274,17 @@ def advice():
         except Exception as e:
             ai_response = f"Error connecting to AI service: {str(e)}"
 
-        print("Session Data:", session.get("conversation", []))
+
         return jsonify({"reply": ai_response})
 
     else:
         if categories:
             categories = None
-        print("no")
+
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement = getStatements(file)
-            print(bank_statement)
+
 
         text_input = request.form.get("text")
 
@@ -321,7 +320,7 @@ def advice():
         except Exception as e:
             ai_response = f"Error connecting to AI service: {str(e)}"
 
-        print("Session Data:", session.get("conversation", []))
+
         return jsonify({"reply": ai_response})
 
 @app.route('/save', methods=['POST'])
@@ -330,15 +329,13 @@ def save():
     global banksss
     global categories
     global current
-    print("hello")
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
-        print("leaving n leaving")
+
         categories = None
         current = "empty"
-        print(categories)
-        print(t)
+
         file = request.files["pdf"]
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
@@ -360,7 +357,7 @@ def create():
     }
     response = requests.post(url, json=payload)
 
-    print(response.json())
+
     return jsonify(response.json())
 
 
@@ -391,17 +388,14 @@ def token():
         transactions, categorize = get_transactions(t)
         categories = categorize
         banksss = transactions
-    print(categories)
-    print(banksss)
-    print(response.json())
+
     return jsonify(trans)
 
 @app.route("/analysis", methods=["POST"])
 def analysis():
     global t
     transactions, categorize= get_transactions(t)
-    print(transactions)
-    print(categorize)
+
 
 
 
