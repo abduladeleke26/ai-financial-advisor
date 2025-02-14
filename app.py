@@ -121,9 +121,11 @@ def get_transactions(token):
 
     category_totals = defaultdict(float)
     for statement in response:
-        print(statement)
+        print()
 
-        category = statement.get("category", ["Uncategorized"])
+        category = statement.get("personal_finance_category")
+        category = category.get("primary")
+        category = category.replace("_"," ")
         if not category:
             category = ["Uncategorized"]
 
@@ -131,18 +133,18 @@ def get_transactions(token):
             transactions.append({
                 "name": statement.get("name", "Unknown"),
                 "amount": statement.get("amount", 0),
-                "category": statement.get("category", ["Deposit"]) if statement.get("category") else "Deposit",
+                "category": category,
                 "type": "deposit"
             })
         else:
             transactions.append({
                 "name": statement.get("name", "Unknown"),
                 "amount": statement.get("amount", 0),
-                "category": statement.get("category", ["Uncategorized"]) if statement.get("category") else "Uncategorized",
+                "category": category,
                 "type": "withdrawal"
             })
 
-        category_totals[category[0]] += round(-1 * statement.get("amount", 0), 2)
+        category_totals[category] += round(-1 * statement.get("amount", 0), 2)
 
 
 
@@ -383,7 +385,7 @@ def token():
     if "access_token" in trans:
         session.clear()
         t = trans["access_token"]
-        time.sleep(10)
+        time.sleep(5)
         transactions, categorize = get_transactions(t)
         categories = categorize
         banksss = transactions
