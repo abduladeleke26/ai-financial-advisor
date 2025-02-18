@@ -101,6 +101,11 @@ instructions = """
   """
 
 def get_transactions(token):
+    low = 0
+    hi = 0
+    high = None
+    lowest = None
+
     start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -113,18 +118,28 @@ def get_transactions(token):
         "end_date": end_date,
         "options": {"count": 100, "offset": 0}
     }
-
+    time.sleep(5)
     response = requests.post(url, json=payload)
     response = response.json()
-    print(response)
-    response = response["transactions"]
-    print(response)
+
+    if response.get("error_code"):
+        get_transactions(token)
+
+    response = response.get("transactions")
+    if response is None
+        get_transactions(token)
+
+    
+
 
 
     transactions = []
 
     category_totals = defaultdict(float)
     for statement in response:
+
+
+
 
 
         category = statement.get("personal_finance_category")
@@ -142,6 +157,28 @@ def get_transactions(token):
                 "type": "deposit"
             })
         else:
+            if statement.get("amount") > hi:
+                hi = statement.get("amount")
+                high = f'''
+                    "rank": "highest",
+                    "name": {statement.get("name", "Unknown")},
+                    "date": {statement.get("date")},
+                    "amount": {statement.get("amount", 0)},
+                    "category": {category}
+                '''
+
+            if statement.get("amount") < low:
+                low = statement.get("amount")
+                lowest = f'''
+                    "rank": "lowest",
+                    "name": {statement.get("name", "Unknown")},
+                    "date": {statement.get("date")},
+                    "amount": {statement.get("amount")},
+                    "category": {category}
+                '''
+
+
+
             transactions.append({
                 "name": statement.get("name", "Unknown"),
                 "date": statement.get("date"),
@@ -150,11 +187,14 @@ def get_transactions(token):
                 "type": "withdrawal"
             })
 
+
+
         category_totals[category] += round(-1 * statement.get("amount", 0), 2)
 
 
     transactions.reverse()
-
+    transactions.append({high})
+    transactions.append({lowest})
     return transactions, category_totals
 
 
@@ -392,7 +432,6 @@ def token():
     if "access_token" in trans:
         session.clear()
         t = trans["access_token"]
-        time.sleep(15)
         transactions, categorize = get_transactions(t)
         categories = categorize
         banksss = transactions
