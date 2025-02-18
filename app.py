@@ -126,7 +126,7 @@ def get_transactions(token):
         get_transactions(token)
 
     response = response.get("transactions")
-    if response is None
+    if response is None:
         get_transactions(token)
 
     
