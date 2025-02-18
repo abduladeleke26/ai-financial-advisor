@@ -123,11 +123,11 @@ def get_transactions(token):
     response = response.json()
 
     if response.get("error_code"):
-        get_transactions(token)
+        return get_transactions(token)
 
     response = response.get("transactions")
     if response is None:
-        get_transactions(token)
+        return get_transactions(token)
 
     
 
