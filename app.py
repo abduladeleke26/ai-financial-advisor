@@ -391,7 +391,7 @@ def token():
         transactions, categorize = get_transactions(t)
         categories = categorize
         banksss = transactions
-        
+        session["conversation"].append({"role": "user", "content": str(categories)})
     return jsonify(trans)
 
 @app.route("/analysis", methods=["POST"])
