@@ -20,6 +20,7 @@ clientId = os.environ.get('PLAID_CLIENT')
 key = os.environ.get('PLAID_KEY')
 PLAID_BASE_URL = f"https://production.plaid.com"
 
+
 t = ""
 
 client = OpenAI(api_key=os.environ.get('AI_KEY'))
@@ -114,7 +115,10 @@ def get_transactions(token):
     }
 
     response = requests.post(url, json=payload)
-    response = response.json()["transactions"]
+    response = response.json()
+    print(response)
+    response = response["transactions"]
+    print(response)
 
 
     transactions = []
@@ -258,6 +262,7 @@ def advice():
 
 
         if current != categories:
+
             session["conversation"].append({"role": "system","content": bankInstructions})
             current = categories
 
@@ -391,6 +396,8 @@ def token():
         transactions, categorize = get_transactions(t)
         categories = categorize
         banksss = transactions
+        if "conversation" not in session:
+            session["conversation"] = []
         session["conversation"].append({"role": "user", "content": str(categories)})
     return jsonify(trans)
 
