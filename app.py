@@ -428,7 +428,8 @@ def token():
     }
     response = requests.post(url, json=payload)
     trans = response.json()
-
+  
+    time.sleep(5)
     if "access_token" in trans:
         session.clear()
         t = trans["access_token"]
