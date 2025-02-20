@@ -53,7 +53,7 @@ Finally give financial advice. Talk about where the user did good and what needs
 
 THE ONLY THING I SHOULD SEE IS THE TITLE, 2 TABLES(WITHDRAWAL AND DEPOSIT), AND THE FINANCIAL ADVICE.
 
-
+NEVER MENTION ANYT  HING ELSE OUTSIDE OF FINANCIAL ADVICE
 
 """
 
