@@ -118,7 +118,7 @@ def get_transactions(token):
         "end_date": end_date,
         "options": {"count": 100, "offset": 0}
     }
-    time.sleep(5)
+    time.sleep(10)
     response = requests.post(url, json=payload)
     response = response.json()
 
