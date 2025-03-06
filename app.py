@@ -248,7 +248,7 @@ def home():
     if "conversation" not in session:
         session["conversation"] = []
     session.permanent = True
-    if logged_in:
+    if logged_in and isinstance(user, User):
         greeting = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
@@ -279,6 +279,9 @@ def home():
                 {"role": "user", "content": "hello"}
             ],
         )
+
+        categories = None
+        banksss = None
 
     begin = greeting.choices[0].message.content
     if categories:
@@ -362,8 +365,7 @@ def advice():
         if current == categories:
             if text_input:
                 session["conversation"].append({"role": "user", "content": str(banksss)})
-                session["conversation"].append({"role": "system",
-                                                "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT AND MAKE SURE ITS STRUCTURED WELL SO THE USER CAN READ WELL INSTEAD OF A BIG PARAGRAPH! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+                session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT AND MAKE SURE ITS STRUCTURED WELL SO THE USER CAN READ WELL INSTEAD OF A BIG PARAGRAPH! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
                 session["conversation"].append({"role": "user", "content": text_input})
 
         if current != categories:
@@ -391,7 +393,7 @@ def advice():
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
-            if isinstance(user, User): 
+            if isinstance(user, User):
                 user = User.query.filter_by(id=user.id).first()
 
                 user.categories = json.dumps(bank_statement)
