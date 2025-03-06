@@ -174,7 +174,7 @@ def get_transactions(token):
 
 
 def financial_advisor(statements):
-    system = {"role": "system", "content": bankInstructions}
+    system = {"role": "system", "content": instructions}
 
     user = []
     for statement in statements:
@@ -410,7 +410,7 @@ def advice():
 
         chat = ""
         if current != categories:
-            chat, system, user = financial_advisor(str(categories))
+            chat, system, user = financial_advisor(str(bank_statement))
             session["conversation"].append({"role": "assistant", "content": chat})
             current = categories
 
@@ -428,7 +428,7 @@ def advice():
             else:
                 completion = client.chat.completions.create(
                     model="gpt-4-turbo",
-                    messages=[{"role": "user", "content": str(banksss)}] + session["conversation"]
+                    messages=[{"role": "user", "content": str(bank_statement)}] + session["conversation"]
                 )
                 ai_response = completion.choices[0].message.content.replace("```", "")
                 ai_response = ai_response.replace("html", "")
@@ -461,7 +461,7 @@ def save():
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
         banksss = ting
-        print(banksss)
+
 
     return jsonify({"value": banksss})
 
