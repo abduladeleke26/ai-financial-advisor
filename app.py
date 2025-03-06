@@ -26,6 +26,7 @@ class User(db.Model):
     password = db.Column(db.String(200), nullable=False)
     categories = db.Column(db.Text, nullable=True)
     info = db.Column(db.Text, nullable=True)
+    files = db.Column(db.Boolean, nullable=True)
 
 
 with app.app_context():
@@ -263,13 +264,24 @@ def home():
         categories = user.categories
         banksss = user.info
         current = categories
-        menn = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {"role": "system", "content": bankInstructions},
-                {"role": "user", "content": str(categories)},
-            ]
-        )
+        files = user.files
+        if not files:
+            menn = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[
+                    {"role": "system", "content": bankInstructions},
+                    {"role": "user", "content": str(categories)},
+                ]
+            )
+        else:
+            menn = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[
+                    {"role": "system", "content": instructions},
+                    {"role": "user", "content": str(categories)},
+                ]
+            )
+
     else:
         greeting = client.chat.completions.create(
             model="gpt-4-turbo",
@@ -332,8 +344,8 @@ def signupfr():
         db.session.commit()
         return redirect(url_for('home'))
     else:
-        flash('password and confirm password is not the same', 'danger')
-        return render_template('sign up.html')
+        message = "password and confirm password is not the same"
+        return render_template('sign up.html',message=message)
 
 
 @app.route('/logout')
@@ -398,6 +410,7 @@ def advice():
 
                 user.categories = json.dumps(bank_statement)
                 user.info = None
+                user.files = True
 
                 flag_modified(user, "categories")
                 flag_modified(user, "info")
@@ -515,6 +528,7 @@ def token():
 
             user.categories = json.dumps(categorize)
             user.info = json.dumps(transactions)
+            user.files = False
 
             flag_modified(user, "categories")
             flag_modified(user, "info")
