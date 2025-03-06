@@ -450,13 +450,14 @@ def save():
     global categories
     global current
     global user
+    global files
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
 
         categories = None
         current = "empty"
-
+        files = True
         file = request.files["pdf"]
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
@@ -510,9 +511,8 @@ def token():
         session.clear()
         t = trans["access_token"]
         time.sleep(15)
-        files = True
+        files = False
         transactions, categorize = get_transactions(t)
-
         if user:
             user = User.query.filter_by(id=user.id).first()
 
