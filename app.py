@@ -12,26 +12,21 @@ from flask_bcrypt import Bcrypt
 from sqlalchemy.orm.attributes import flag_modified
 import os
 
-
-
-
-
-
-
-
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///database.db")
 app.secret_key = "your-secret-key"
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(80), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    categories = db.Column(db.String(10000000), nullable=True)
-    info = db.Column(db.String(10000000), nullable=True)
+    categories = db.Column(db.String(10000), nullable=True)
+    info = db.Column(db.String(10000), nullable=True)
+
 
 with app.app_context():
     db.create_all()
@@ -44,7 +39,7 @@ t = ""
 
 client = OpenAI(api_key=os.environ.get('AI_KEY'))
 
-banksss =""
+banksss = ""
 categories = None
 logged_in = False
 name = None
@@ -64,7 +59,7 @@ if the amount starts with "-" it is a withdrawal.
 
 
 no table should have two of the same categories.
-  
+
 every table should have a total (total withdrawals, total deposits)
 
 every table should have a title (withdrawals, deposits) in <h2></h2>
@@ -101,29 +96,28 @@ instructions = """
   Education   
   Finance 
   Uncategorized 
-  
-  go through each deposit and see what category fits the best
-  
-  
-  once everything is categorized sum up each category with the transaction in it and put it on a table in HTML FORMAT.
-  
-  no table should have two of the same categories.
-  
-  every table should have a total (total withdrawals, total deposits)
-  
-  every table should have a title (withdrawals, deposits) in <h2></h2>
-  
-  make sure both tables are always separate they cannot touch.
-  
-  keep deposits and withdrawals separate.
-  
-  Finally give financial advice. Talk about where the user did good and what needs to be improved.
-  
-  THE ONLY THING I SHOULD SEE IS THE TITLE, TABLES, AND THE FINANCIAL ADVICE.
-  
-  
-  """
 
+  go through each deposit and see what category fits the best
+
+
+  once everything is categorized sum up each category with the transaction in it and put it on a table in HTML FORMAT.
+
+  no table should have two of the same categories.
+
+  every table should have a total (total withdrawals, total deposits)
+
+  every table should have a title (withdrawals, deposits) in <h2></h2>
+
+  make sure both tables are always separate they cannot touch.
+
+  keep deposits and withdrawals separate.
+
+  Finally give financial advice. Talk about where the user did good and what needs to be improved.
+
+  THE ONLY THING I SHOULD SEE IS THE TITLE, TABLES, AND THE FINANCIAL ADVICE.
+
+
+  """
 
 
 def get_transactions(token):
@@ -144,16 +138,14 @@ def get_transactions(token):
     response = response.json()
     response = response["transactions"]
 
-
     transactions = []
 
     category_totals = defaultdict(float)
     for statement in response:
 
-
         category = statement.get("personal_finance_category")
         category = category.get("primary")
-        category = category.replace("_"," ")
+        category = category.replace("_", " ")
         if not category:
             category = ["Uncategorized"]
 
@@ -176,70 +168,70 @@ def get_transactions(token):
 
         category_totals[category] += round(-1 * statement.get("amount", 0), 2)
 
-
-
     transactions.reverse()
 
     return transactions, category_totals
 
 
 def financial_advisor(statements):
-  system = {"role": "system", "content": instructions}
+    system = {"role": "system", "content": bankInstructions}
 
-  user = []
-  for statement in statements:
-    user.append({"role": "user", "content": statement})
+    user = []
+    for statement in statements:
+        user.append({"role": "user", "content": statement})
 
+    completion = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[system] + user,
 
-  completion = client.chat.completions.create(
-    model="gpt-4-turbo",
-    messages=[system]+user,
+    )
 
-  )
+    return completion.choices[0].message.content, system, user
 
-  return completion.choices[0].message.content, system, user
 
 def getStatements(file):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
     encoded_file = base64.b64encode(file.read()).decode("utf-8")
     payload = json.dumps({
-      "file_data": encoded_file
+        "file_data": encoded_file
     })
     headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'CLIENT-ID': os.environ.get('OTHER_CLIENT'),
-      'AUTHORIZATION': os.environ.get('OTHER_KEY')
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'CLIENT-ID': os.environ.get('OTHER_CLIENT'),
+        'AUTHORIZATION': os.environ.get('OTHER_KEY')
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
     response = response.json()
 
-
+    print(response)
 
     transactions = response.get("transactions")
 
     categories = response.get("summaries")
 
-
     statements = []
 
     for order in transactions:
         if order.get("credit_amount"):
-            statements.append(f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
+            statements.append(
+                f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
         else:
-            statements.append(f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
-
+            statements.append(
+                f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
+    print("------------")
+    print(statements)
+    print("------------")
     return statements, categories
+
 
 @app.before_request
 def clear_session_on_refresh():
     session.permanent = False
     if request.path == "/":
         session.clear()
-
-
 
 
 @app.route('/')
@@ -259,8 +251,10 @@ def home():
         greeting = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
-                {"role": "system", "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
-                {"role": "system", "content": f"the user name is {name}. welcome the user back. tell the user to either continue asking questions or to either upload bank statements or connect to their bank for advice on a different account"},
+                {"role": "system",
+                 "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
+                {"role": "system",
+                 "content": f"the user name is {name}. welcome the user back. tell the user to either continue asking questions or to either upload bank statements or connect to their bank for advice on a different account"},
                 {"role": "user", "content": "hello"}
             ],
         )
@@ -279,7 +273,8 @@ def home():
         greeting = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
-                {"role": "system","content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
+                {"role": "system",
+                 "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
                 {"role": "user", "content": "hello"}
             ],
         )
@@ -288,9 +283,7 @@ def home():
     if categories:
         info = menn.choices[0].message.content
 
-
-
-    return render_template('index.html',ai = begin,logged_in = logged_in, info=info if categories else None, error = error)
+    return render_template('index.html', ai=begin, logged_in=logged_in, info=info if categories else None, error=error)
 
 
 @app.route('/login', methods=['POST'])
@@ -318,14 +311,15 @@ def signupfr():
     full_name = request.form['name']
     username = request.form['username']
     password = request.form['password']
-    confirm =  request.form['confirm password']
+    confirm = request.form['confirm password']
 
     if password == confirm:
 
         existing_user = User.query.filter_by(username=username).first()
 
         if existing_user:
-            message = "Username is already taken. Please choose another one."
+            flash('Username is already taken. Please choose another one.', 'danger')
+            message = "This user is taken."
             return render_template('sign up.html', message=message)
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -334,8 +328,9 @@ def signupfr():
         db.session.commit()
         return redirect(url_for('home'))
     else:
-        message = "password and confirm password is not the same"
-        return render_template('sign up.html', message=message)
+        flash('password and confirm password is not the same', 'danger')
+        return render_template('sign up.html')
+
 
 @app.route('/logout')
 def logout():
@@ -359,32 +354,25 @@ def advice():
     if "conversation" not in session:
         session["conversation"] = []
 
-
-
-    if files == False:
+    if files == True:
 
         text_input = request.form.get("text")
-
-
 
         if current == categories:
             if text_input:
                 session["conversation"].append({"role": "user", "content": str(banksss)})
-                session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT AND MAKE SURE ITS STRUCTURED WELL SO THE USER CAN READ WELL INSTEAD OF A BIG PARAGRAPH! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+                session["conversation"].append({"role": "system",
+                                                "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT AND MAKE SURE ITS STRUCTURED WELL SO THE USER CAN READ WELL INSTEAD OF A BIG PARAGRAPH! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
                 session["conversation"].append({"role": "user", "content": text_input})
 
-
         if current != categories:
-
-            session["conversation"].append({"role": "system","content": bankInstructions})
+            session["conversation"].append({"role": "system", "content": bankInstructions})
             current = categories
-
-
 
         try:
             completion = client.chat.completions.create(
                 model="gpt-4-turbo",
-                messages = session["conversation"]
+                messages=session["conversation"]
             )
             ai_response = completion.choices[0].message.content.replace("```", "")
             ai_response = ai_response.replace("html", "")
@@ -395,19 +383,18 @@ def advice():
         except Exception as e:
             ai_response = f"Error connecting to AI service: {str(e)}"
 
-        print("this is bank")
         return jsonify({"reply": ai_response})
 
     else:
-        print("this is a file")
+
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
             if user:
                 user = User.query.filter_by(id=user.id).first()
 
-                user.categories = json.dumps(bank_statement)
-                user.info = None
+                user.categories = json.dumps(categories)
+                user.info = json.dumps(bank_statement)
 
                 flag_modified(user, "categories")
                 flag_modified(user, "info")
@@ -419,19 +406,20 @@ def advice():
                     print("Database commit failed:", str(e))
             db.session.commit()
 
-
-
-
         text_input = request.form.get("text")
 
         chat = ""
-        if bank_statement:
-            chat, system, user = financial_advisor(bank_statement)
+        if current != categories:
+            chat, system, user = financial_advisor(str(categories))
             session["conversation"].append({"role": "assistant", "content": chat})
+            current = categories
 
-        if text_input:
-            session["conversation"].append({"role": "system","content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
-            session["conversation"].append({"role": "user", "content": text_input})
+        if current == categories:
+            if text_input:
+                session["conversation"].append({"role": "system",
+                                                "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+                session["conversation"].append({"role": "user", "content": str(bank_statement)})
+                session["conversation"].append({"role": "user", "content": text_input})
 
         try:
             if len(chat) > 3:
@@ -453,6 +441,7 @@ def advice():
 
         return jsonify({"reply": ai_response})
 
+
 @app.route('/save', methods=['POST'])
 def save():
     global t
@@ -460,24 +449,21 @@ def save():
     global categories
     global current
     global user
-    global files
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
-        files = True
+
         categories = None
         current = "empty"
 
         file = request.files["pdf"]
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
-        banksss=ting
-
-
-
-
+        banksss = ting
+        print(banksss)
 
     return jsonify({"value": banksss})
+
 
 @app.route("/get_link_token", methods=["GET"])
 def create():
@@ -492,7 +478,6 @@ def create():
         "language": "en"
     }
     response = requests.post(url, json=payload)
-
 
     return jsonify(response.json())
 
@@ -527,14 +512,11 @@ def token():
         files = True
         transactions, categorize = get_transactions(t)
 
-
         if user:
             user = User.query.filter_by(id=user.id).first()
 
-
             user.categories = json.dumps(categorize)
             user.info = json.dumps(transactions)
-
 
             flag_modified(user, "categories")
             flag_modified(user, "info")
@@ -552,18 +534,20 @@ def token():
             session["conversation"] = []
         session["conversation"].append({"role": "user", "content": str(categorize)})
 
-
     return jsonify(trans)
+
 
 @app.route("/analysis", methods=["POST"])
 def analysis():
     global t
-    transactions, categorize= get_transactions(t)
+    transactions, categorize = get_transactions(t)
     return jsonify(categorize)
+
 
 @app.route('/signup')
 def signup():
     return render_template('sign up.html')
+
 
 if __name__ == "__main__":
     app.run(debug=True)
