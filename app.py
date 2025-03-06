@@ -510,7 +510,7 @@ def token():
         time.sleep(15)
         files = False
         transactions, categorize = get_transactions(t)
-        if user:
+        if isinstance(user, User):
             user = User.query.filter_by(id=user.id).first()
 
             user.categories = json.dumps(categorize)
