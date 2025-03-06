@@ -364,7 +364,7 @@ def advice():
 
 
 
-    if files == True:
+    if files == False:
 
         text_input = request.form.get("text")
 
@@ -467,10 +467,11 @@ def save():
     global categories
     global current
     global user
+    global files
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
-
+        files = True
         categories = None
         current = "empty"
 
