@@ -184,7 +184,7 @@ def get_transactions(token):
 
 
 def financial_advisor(statements):
-  system = {"role": "system", "content": bankInstructions}
+  system = {"role": "system", "content": instructions}
 
   user = []
   for statement in statements:
@@ -428,7 +428,7 @@ def advice():
 
         chat = ""
         if current != categories:
-            chat, system, user = financial_advisor(str(categories))
+            chat, system, user = financial_advisor(str(bank_statement))
             session["conversation"].append({"role": "assistant", "content": chat})
             current = categories
 
