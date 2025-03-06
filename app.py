@@ -24,8 +24,8 @@ class User(db.Model):
     full_name = db.Column(db.String(80), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    categories = db.Column(db.String(10000), nullable=True)
-    info = db.Column(db.String(10000), nullable=True)
+    categories = db.Column(db.Text, nullable=True)
+    info = db.Column(db.Text, nullable=True)
 
 
 with app.app_context():
@@ -391,11 +391,11 @@ def advice():
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
-            if user:
+            if isinstance(user, User):  # Ensure user is an actual User object
                 user = User.query.filter_by(id=user.id).first()
 
-                user.categories = json.dumps(categories)
-                user.info = json.dumps(bank_statement)
+                user.categories = json.dumps(bank_statement)
+                user.info = None
 
                 flag_modified(user, "categories")
                 flag_modified(user, "info")
@@ -405,7 +405,6 @@ def advice():
                 except Exception as e:
                     db.session.rollback()
                     print("Database commit failed:", str(e))
-            db.session.commit()
 
         text_input = request.form.get("text")
 
