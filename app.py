@@ -18,6 +18,7 @@ import os
 
 
 
+
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///database.db")
 app.secret_key = "your-secret-key"
@@ -29,8 +30,8 @@ class User(db.Model):
     full_name = db.Column(db.String(80), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    categories = db.Column(db.String(10000), nullable=True)
-    info = db.Column(db.String(10000), nullable=True)
+    categories = db.Column(db.String(10000000), nullable=True)
+    info = db.Column(db.String(10000000), nullable=True)
 
 with app.app_context():
     db.create_all()
