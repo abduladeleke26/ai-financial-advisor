@@ -395,11 +395,11 @@ def advice():
         except Exception as e:
             ai_response = f"Error connecting to AI service: {str(e)}"
 
-
+        print("this is bank")
         return jsonify({"reply": ai_response})
 
     else:
-
+        print("this is a file")
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
