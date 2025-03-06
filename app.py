@@ -206,7 +206,7 @@ def getStatements(file):
 
     response = response.json()
 
-    print(response)
+
 
     transactions = response.get("transactions")
 
@@ -224,6 +224,7 @@ def getStatements(file):
     print("------------")
     print(statements)
     print("------------")
+    print(categories)
     return statements, categories
 
 
@@ -354,8 +355,8 @@ def advice():
     if "conversation" not in session:
         session["conversation"] = []
 
-    if files == True:
-
+    if files == False:
+        print("this is bank")
         text_input = request.form.get("text")
 
         if current == categories:
@@ -386,7 +387,7 @@ def advice():
         return jsonify({"reply": ai_response})
 
     else:
-
+        print("this is file")
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
