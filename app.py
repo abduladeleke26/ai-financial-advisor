@@ -327,8 +327,7 @@ def signupfr():
         existing_user = User.query.filter_by(username=username).first()
 
         if existing_user:
-            flash('Username is already taken. Please choose another one.', 'danger')
-            message = "This user is taken."
+            message = "Username is already taken. Please choose another one."
             return render_template('sign up.html', message=message)
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -337,8 +336,8 @@ def signupfr():
         db.session.commit()
         return redirect(url_for('home'))
     else:
-        flash('password and confirm password is not the same', 'danger')
-        return render_template('sign up.html')
+        message = "password and confirm password is not the same"
+        return render_template('sign up.html', message=message)
 
 @app.route('/logout')
 def logout():
