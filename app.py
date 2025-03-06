@@ -391,7 +391,7 @@ def advice():
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
-            if isinstance(user, User):  # Ensure user is an actual User object
+            if isinstance(user, User): 
                 user = User.query.filter_by(id=user.id).first()
 
                 user.categories = json.dumps(bank_statement)
