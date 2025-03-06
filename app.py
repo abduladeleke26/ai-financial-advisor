@@ -1,25 +1,43 @@
 import time
 from openai import OpenAI
 from pypdf import PdfReader
-from flask import Flask, render_template, request, session, jsonify
+from flask import Flask, render_template, request, session, jsonify, flash, redirect, url_for
 import base64
 import json
 import requests
 import datetime
 from collections import defaultdict
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from sqlalchemy.orm.attributes import flag_modified
 import os
 
 
 
+
+
+
+
 app = Flask(__name__, static_folder="static", template_folder="templates")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///database.db")
 app.secret_key = "your-secret-key"
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(80), nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    categories = db.Column(db.String(10000), nullable=True)
+    info = db.Column(db.String(10000), nullable=True)
 
+with app.app_context():
+    db.create_all()
 
 clientId = os.environ.get('PLAID_CLIENT')
 key = os.environ.get('PLAID_KEY')
 PLAID_BASE_URL = f"https://production.plaid.com"
-
 
 t = ""
 
@@ -27,6 +45,11 @@ client = OpenAI(api_key=os.environ.get('AI_KEY'))
 
 banksss =""
 categories = None
+logged_in = False
+name = None
+user = None
+files = False
+error = None
 current = "empty"
 
 bankInstructions = """
@@ -53,7 +76,7 @@ Finally give financial advice. Talk about where the user did good and what needs
 
 THE ONLY THING I SHOULD SEE IS THE TITLE, 2 TABLES(WITHDRAWAL AND DEPOSIT), AND THE FINANCIAL ADVICE.
 
-NEVER MENTION ANYTHING ELSE OUTSIDE OF FINANCIAL ADVICE
+
 
 """
 
@@ -100,12 +123,9 @@ instructions = """
   
   """
 
-def get_transactions(token):
-    low = 0
-    hi = 0
-    high = None
-    lowest = None
 
+
+def get_transactions(token):
     start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
     end_date = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -118,28 +138,16 @@ def get_transactions(token):
         "end_date": end_date,
         "options": {"count": 100, "offset": 0}
     }
-    time.sleep(10)
+
     response = requests.post(url, json=payload)
     response = response.json()
-
-    if response.get("error_code"):
-        return get_transactions(token)
-
-    response = response.get("transactions")
-    if response is None:
-        return get_transactions(token)
-
-    
-
+    response = response["transactions"]
 
 
     transactions = []
 
     category_totals = defaultdict(float)
     for statement in response:
-
-
-
 
 
         category = statement.get("personal_finance_category")
@@ -157,28 +165,6 @@ def get_transactions(token):
                 "type": "deposit"
             })
         else:
-            if statement.get("amount") > hi:
-                hi = statement.get("amount")
-                high = f'''
-                    "rank": "highest",
-                    "name": {statement.get("name", "Unknown")},
-                    "date": {statement.get("date")},
-                    "amount": {statement.get("amount", 0)},
-                    "category": {category}
-                '''
-
-            if statement.get("amount") < low:
-                low = statement.get("amount")
-                lowest = f'''
-                    "rank": "lowest",
-                    "name": {statement.get("name", "Unknown")},
-                    "date": {statement.get("date")},
-                    "amount": {statement.get("amount")},
-                    "category": {category}
-                '''
-
-
-
             transactions.append({
                 "name": statement.get("name", "Unknown"),
                 "date": statement.get("date"),
@@ -187,19 +173,17 @@ def get_transactions(token):
                 "type": "withdrawal"
             })
 
-
-
         category_totals[category] += round(-1 * statement.get("amount", 0), 2)
 
 
+
     transactions.reverse()
-    transactions.append({high})
-    transactions.append({lowest})
+
     return transactions, category_totals
 
 
 def financial_advisor(statements):
-  system = {"role": "system", "content": instructions}
+  system = {"role": "system", "content": bankInstructions}
 
   user = []
   for statement in statements:
@@ -231,7 +215,11 @@ def getStatements(file):
 
     response = response.json()
 
+    print(response)
+
     transactions = response.get("transactions")
+
+    categories = response.get("summaries")
 
 
     statements = []
@@ -241,8 +229,10 @@ def getStatements(file):
             statements.append(f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
         else:
             statements.append(f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
-
-    return statements
+    print("------------")
+    print(statements)
+    print("------------")
+    return statements, categories
 
 @app.before_request
 def clear_session_on_refresh():
@@ -250,29 +240,112 @@ def clear_session_on_refresh():
     if request.path == "/":
         session.clear()
 
+
+
+
 @app.route('/')
 def home():
     global categories
+    global banksss
     global current
+    global logged_in
+    global user
+    global error
     categories = None
     current = "empty"
     if "conversation" not in session:
         session["conversation"] = []
     session.permanent = True
-    greeting = client.chat.completions.create(
-        model="gpt-4-turbo",
-        messages=[
-            {"role": "system", "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
-            {"role": "user", "content": "hello"}
-        ],
+    if logged_in:
+        greeting = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
+                {"role": "system", "content": f"the user name is {name}. welcome the user back. tell the user to either continue asking questions or to either upload bank statements or connect to their bank for advice on a different account"},
+                {"role": "user", "content": "hello"}
+            ],
+        )
 
-    )
+        categories = user.categories
+        banksss = user.info
+        current = categories
+        menn = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": bankInstructions},
+                {"role": "user", "content": str(categories)},
+            ]
+        )
+    else:
+        greeting = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system","content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
+                {"role": "user", "content": "hello"}
+            ],
+        )
 
     begin = greeting.choices[0].message.content
+    if categories:
+        info = menn.choices[0].message.content
 
 
 
-    return render_template('index.html',ai = begin)
+    return render_template('index.html',ai = begin,logged_in = logged_in, info=info if categories else None, error = error)
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    global name
+    global logged_in
+    global user
+    global error
+    username = request.form['username']
+    password = request.form['password']
+
+    user = User.query.filter_by(username=username).first()
+    if user and bcrypt.check_password_hash(user.password, password):
+        name = user.full_name
+        logged_in = True
+        error = None
+        return redirect(url_for('home'))
+    else:
+        error = "Username or Password is Wrong"
+        return redirect(url_for('home'))
+
+
+@app.route('/signupfr', methods=['POST'])
+def signupfr():
+    full_name = request.form['name']
+    username = request.form['username']
+    password = request.form['password']
+    confirm =  request.form['confirm password']
+
+    if password == confirm:
+
+        existing_user = User.query.filter_by(username=username).first()
+
+        if existing_user:
+            flash('Username is already taken. Please choose another one.', 'danger')
+            message = "This user is taken."
+            return render_template('sign up.html', message=message)
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = User(full_name=full_name, username=username, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('home'))
+    else:
+        flash('password and confirm password is not the same', 'danger')
+        return render_template('sign up.html')
+
+@app.route('/logout')
+def logout():
+    global logged_in
+    global user
+    logged_in = False
+    user = None
+    return redirect(url_for('home'))
 
 
 @app.route('/advice', methods=['POST'])
@@ -280,6 +353,8 @@ def advice():
     global banksss
     global categories
     global current
+    global files
+    global user
     bank_statement = ""
 
     session.permanent = True
@@ -288,7 +363,7 @@ def advice():
 
 
 
-    if categories:
+    if files == True:
 
         text_input = request.form.get("text")
 
@@ -326,48 +401,61 @@ def advice():
         return jsonify({"reply": ai_response})
 
     else:
-        if categories:
-            categories = None
 
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
-            bank_statement = getStatements(file)
+            bank_statement, categories = getStatements(file)
+            if user:
+                user = User.query.filter_by(id=user.id).first()
+
+                user.categories = json.dumps(categories)
+                user.info = json.dumps(bank_statement)
+
+                flag_modified(user, "categories")
+                flag_modified(user, "info")
+
+                try:
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    print("Database commit failed:", str(e))
+            db.session.commit()
+
+
 
 
         text_input = request.form.get("text")
 
-
         chat = ""
-        if bank_statement:
-            chat,system,user = financial_advisor(bank_statement)
+        if current != categories:
+            chat, system, user = financial_advisor(str(categories))
             session["conversation"].append({"role": "assistant", "content": chat})
+            current = categories
 
-
-
-
-        if text_input:
-            session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
-            session["conversation"].append({"role": "user", "content": text_input})
+        if current == categories:
+            if text_input:
+                session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+                session["conversation"].append({"role": "user", "content": str(bank_statement)})
+                session["conversation"].append({"role": "user", "content": text_input})
 
 
         try:
-            if len(chat)>3:
-                ai_response = chat.replace("```","")
+            if len(chat) > 3:
+                ai_response = chat.replace("```", "")
                 ai_response = ai_response.replace("html", "")
             else:
                 completion = client.chat.completions.create(
                     model="gpt-4-turbo",
                     messages=[{"role": "user", "content": str(banksss)}] + session["conversation"]
                 )
-                ai_response = completion.choices[0].message.content.replace("```","")
-                ai_response = ai_response.replace("html","")
+                ai_response = completion.choices[0].message.content.replace("```", "")
+                ai_response = ai_response.replace("html", "")
                 session["conversation"].append({"role": "assistant", "content": ai_response})
 
             session.modified = True
 
         except Exception as e:
             ai_response = f"Error connecting to AI service: {str(e)}"
-
 
         return jsonify({"reply": ai_response})
 
@@ -377,6 +465,7 @@ def save():
     global banksss
     global categories
     global current
+    global user
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
@@ -388,6 +477,10 @@ def save():
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
         banksss=ting
+        print(banksss)
+
+
+
 
     return jsonify({"value": banksss})
 
@@ -414,6 +507,9 @@ def token():
     global t
     global categories
     global banksss
+    global user
+    global files
+
     data = request.json
     public_token = data.get("public_token")
 
@@ -428,29 +524,51 @@ def token():
     }
     response = requests.post(url, json=payload)
     trans = response.json()
-  
-    time.sleep(5)
+
     if "access_token" in trans:
         session.clear()
         t = trans["access_token"]
+        time.sleep(15)
+        files = True
         transactions, categorize = get_transactions(t)
+
+
+        if user:
+            user = User.query.filter_by(id=user.id).first()
+
+
+            user.categories = json.dumps(categorize)
+            user.info = json.dumps(transactions)
+
+
+            flag_modified(user, "categories")
+            flag_modified(user, "info")
+
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print("Database commit failed:", str(e))
+
         categories = categorize
         banksss = transactions
+
         if "conversation" not in session:
             session["conversation"] = []
-        session["conversation"].append({"role": "user", "content": str(categories)})
+        session["conversation"].append({"role": "user", "content": str(categorize)})
+
+
     return jsonify(trans)
 
 @app.route("/analysis", methods=["POST"])
 def analysis():
     global t
     transactions, categorize= get_transactions(t)
-
-
-
-
     return jsonify(categorize)
 
+@app.route('/signup')
+def signup():
+    return render_template('sign up.html')
 
 if __name__ == "__main__":
     app.run(debug=True)

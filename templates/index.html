@@ -18,7 +18,34 @@
             <div class="logs" id="logs" style="margin-bottom: 20px; width: 100%; height: 500px; overflow-y: scroll; position: relative;" >
                 <div style="display: flex; justify-content: flex-start; margin-bottom: 5px; align-items: flex-start;">
                     <div style="color: white; width: fit-content; max-width: 500px; padding: 5px; background-color: black; border-radius: 8px; font-family: verdana;">{{ai | safe}}</div>
+                    <div style="color: white; width: fit-content; max-width: 500px; padding: 5px; background-color: black; border-radius: 8px; font-family: verdana; margin-left: 10px;">
+                        {% if logged_in %}
+                            <h1>You are logged in</h1>
+                            <form action="/logout">
+                                <button type="submit">Logout</button>
+                            </form>
+                        {% else %}
+                            <form action="/login" method="POST">
+                                <h2>LOGIN/SIGN UP</h2>
+                                <label>Username:</label>
+                                <input type="text" name="username" required>
+                                <br>
+                                <label>Password:</label>
+                                <input type="password" name="password" required>
+                                <br>
+                                {% if error %}
+                                    <p style="color: red;">{{ error }}</p>
+                                {% endif %}
+                                <button type="submit">Login</button>
+                            </form>
+                            <p>Don't have an account? </p>
+                            <a href="{{ url_for('signup') }}"><button>Sign up</button></a>
+                        {% endif %}
+
+                    </div>
+
                 </div>
+
 
                 <div style="display: flex; justify-content: flex-start; margin-bottom: 5px; align-items: flex-start; margin-top: 30px;">
                     <div style="color: white; width: fit-content; max-width: 500px; padding: 5px; background-color: black; border-radius: 8px; font-family: verdana;">
@@ -34,10 +61,17 @@
                         <input type="file" name="pdf" id="file" accept="application/pdf" style="display: none;">
                     </div>
                 </div>
+
+                {% if info %}
+                    <div style="display: flex; justify-content: flex-start; margin-bottom: 5px; align-items: flex-start;">
+                        <div style="color: white; width: fit-content; max-width: 500px; padding: 5px; background-color: black; border-radius: 8px; font-family: verdana;">{{info | safe}}</div>
+                    </div>
+                {% endif %}
+
             </div>
 
             <div style="display: flex;">
-                <img src="../static/assets/img/bank.png" width="100" height="50" id="openPlaid2" onclick="bank()">
+                <img src="../static/assets/img/bank.png" width="100" height="50" id="openPlaid2" onclick="bank()" style="cursor: pointer;">
                 <label for="file">
                     <img src="../static/assets/img/upload.png" width="50" style="cursor: pointer;">
                 </label>
