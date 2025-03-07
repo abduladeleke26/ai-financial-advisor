@@ -221,23 +221,7 @@ def getStatements(file):
         else:
             statements.append(f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
 
-    user = User.query.filter_by(id=session.get("user_id")).first()
-    if isinstance(user, User):
-        print("its working")
-        user = db.session.query(User).filter_by(id=user.id).first()
 
-        user.categories = json.dumps(statements)
-        user.info = None
-        user.files = True
-
-        flag_modified(user, "categories")
-        flag_modified(user, "info")
-
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print("Database commit failed:", str(e))
     return statements
 
 
@@ -474,6 +458,25 @@ def save():
         current = "empty"
 
         file = request.files["pdf"]
+        bankStatments = getStatements(file)
+        user = User.query.filter_by(id=session.get("user_id")).first()
+
+        if isinstance(user, User):
+            user = db.session.query(User).filter_by(id=user.id).first()
+
+            user.categories = json.dumps(bankStatments)
+            user.info = None
+            user.files = True
+
+            flag_modified(user, "categories")
+            flag_modified(user, "info")
+
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print("Database commit failed:", str(e))
+
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
         banksss=ting
