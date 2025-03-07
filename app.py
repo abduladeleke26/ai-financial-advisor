@@ -463,7 +463,13 @@ def save():
         file = request.files["pdf"]
         bankStatments = getStatements(file)
 
+        if user is None:
+            print("User not found in the database")
+
         user = User.query.filter_by(id=session.get("user_id")).first()
+
+        if user is None:
+            print("User not found in the database")
 
         if isinstance(user, User):
             user = db.session.merge(user)
