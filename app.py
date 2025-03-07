@@ -517,7 +517,7 @@ def advice():
 
         chat = ""
         if categories:
-            chat, system, userr = financial_advisor(categories)
+            chat = financial_advisor(categories)
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
