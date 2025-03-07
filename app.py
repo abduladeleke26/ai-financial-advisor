@@ -102,6 +102,8 @@ instructions = """
 
 
   once everything is categorized sum up each category with the transaction in it and put it on a table in HTML FORMAT.
+  
+  THERE SHOULD NEVER BE TWO ROWS WITH THE SAME NAME. SUM EVERYTHING UP.
 
   no table should have two of the same categories.
 
@@ -366,21 +368,28 @@ def advice():
     global current
     global files
     global user
-    bank_statement = ""
 
+    bank_statement = ""
     session.permanent = True
+
     if "conversation" not in session:
         session["conversation"] = []
 
-    if files == False:
+
+    if user and isinstance(user, User):
+        user = db.session.query(User).filter_by(id=user.id).first()  
+        if not user:
+            return jsonify({"error": "User not found"}), 400
+
+    if not files:
         print("this is bank")
         text_input = request.form.get("text")
 
-        if current == categories:
-            if text_input:
-                session["conversation"].append({"role": "user", "content": str(banksss)})
-                session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT AND MAKE SURE ITS STRUCTURED WELL SO THE USER CAN READ WELL INSTEAD OF A BIG PARAGRAPH! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
-                session["conversation"].append({"role": "user", "content": text_input})
+        if current == categories and text_input:
+            session["conversation"].append({"role": "user", "content": str(banksss)})
+            session["conversation"].append({"role": "system",
+                                            "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions. ANSWER IN HTML FORMAT!"})
+            session["conversation"].append({"role": "user", "content": text_input})
 
         if current != categories:
             session["conversation"].append({"role": "system", "content": bankInstructions})
@@ -391,10 +400,8 @@ def advice():
                 model="gpt-4-turbo",
                 messages=session["conversation"]
             )
-            ai_response = completion.choices[0].message.content.replace("```", "")
-            ai_response = ai_response.replace("html", "")
+            ai_response = completion.choices[0].message.content.replace("```", "").replace("html", "")
             session["conversation"].append({"role": "assistant", "content": ai_response})
-
             session.modified = True
 
         except Exception as e:
@@ -407,21 +414,22 @@ def advice():
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
-            if isinstance(user, User):
+
+            if user:
                 user = db.session.query(User).filter_by(id=user.id).first()
+                if user:
+                    user.categories = json.dumps(categories)
+                    user.info = json.dumps(bank_statement)
+                    user.files = True
 
-                user.categories = json.dumps(bank_statement)
-                user.info = None
-                user.files = True
+                    flag_modified(user, "categories")
+                    flag_modified(user, "info")
 
-                flag_modified(user, "categories")
-                flag_modified(user, "info")
-
-                try:
-                    db.session.commit()
-                except Exception as e:
-                    db.session.rollback()
-                    print("Database commit failed:", str(e))
+                    try:
+                        db.session.commit()
+                    except Exception as e:
+                        db.session.rollback()
+                        print("Database commit failed:", str(e))
 
         text_input = request.form.get("text")
 
@@ -431,20 +439,19 @@ def advice():
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
-            session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+            session["conversation"].append({"role": "system",
+                                            "content": "respond to everything kindly as a financial advisor. Look at past chats to answer questions. ANSWER IN HTML FORMAT!"})
             session["conversation"].append({"role": "user", "content": text_input})
 
         try:
             if len(chat) > 3:
-                ai_response = chat.replace("```", "")
-                ai_response = ai_response.replace("html", "")
+                ai_response = chat.replace("```", "").replace("html", "")
             else:
                 completion = client.chat.completions.create(
                     model="gpt-4-turbo",
                     messages=[{"role": "user", "content": str(banksss)}] + session["conversation"]
                 )
-                ai_response = completion.choices[0].message.content.replace("```", "")
-                ai_response = ai_response.replace("html", "")
+                ai_response = completion.choices[0].message.content.replace("```", "").replace("html", "")
                 session["conversation"].append({"role": "assistant", "content": ai_response})
 
             session.modified = True
