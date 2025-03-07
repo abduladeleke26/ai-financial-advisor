@@ -241,6 +241,7 @@ def home():
     global logged_in
     global error
     global user
+    global files
     categories = None
     current = "empty"
     if "conversation" not in session:
