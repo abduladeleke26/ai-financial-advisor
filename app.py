@@ -420,7 +420,7 @@ def advice():
                 return jsonify({"status": "success", "statements": bank_statement})
             else:
                 return jsonify({"status": "error", "message": "Failed to process PDF"}), 400
-            
+
         text_input = request.form.get("text")
 
         chat = ""
@@ -460,42 +460,17 @@ def save():
     global banksss
     global categories
     global current
-    global user
-    global files
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
+
         categories = None
         current = "empty"
-        files = True
+
         file = request.files["pdf"]
-
-
-        if not file.filename.lower().endswith(".pdf") or file.mimetype != "application/pdf":
-            return jsonify({"error": "Invalid file type. Please upload a PDF file."}), 400
-
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
-        banksss = ting
-
-        bank_statement = getStatements(file)
-
-        if user:
-            user = User.query.filter_by(id=user.id).first()
-
-            user.categories = json.dumps(bank_statement)
-            user.info = None
-
-            flag_modified(user, "categories")
-            flag_modified(user, "info")
-
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                print("Database commit failed:", str(e))
-        db.session.commit()
-
+        banksss=ting
 
     return jsonify({"value": banksss})
 
