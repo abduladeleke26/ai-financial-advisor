@@ -467,16 +467,18 @@ def save():
 
         if isinstance(user, User):
             user = db.session.merge(user)
-
-            user.categories = json.dumps(bankStatments)
-            user.info = None
-            user.files = True
-
-            flag_modified(user, "categories")
-            flag_modified(user, "info")
-
             try:
+                user.categories = json.dumps(bankStatments)
+                user.info = None
+                user.files = True
+
+
+                flag_modified(user, "categories")
+                flag_modified(user, "info")
+                flag_modified(user, "files")
+
                 db.session.commit()
+
             except Exception as e:
                 db.session.rollback()
                 print("Database commit failed:", str(e))
