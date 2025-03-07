@@ -261,8 +261,6 @@ def home():
     if "conversation" not in session:
         session["conversation"] = []
     session.permanent = True
-
-    user = User.query.filter_by(id=session.get("user_id")).first()
     if logged_in and isinstance(user, User):
         greeting = client.chat.completions.create(
             model="gpt-4-turbo",
@@ -326,7 +324,6 @@ def login():
     global user
     username = request.form['username']
     password = request.form['password']
-
     user = User.query.filter_by(username=username).first()
     if user and bcrypt.check_password_hash(user.password, password):
         name = user.full_name
