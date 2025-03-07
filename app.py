@@ -423,7 +423,7 @@ def advice():
 
         chat = ""
         if bank_statement:
-            chat, system, user = financial_advisor(bank_statement)
+            chat, system, userr = financial_advisor(bank_statement)
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
