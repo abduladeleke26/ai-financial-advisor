@@ -324,7 +324,7 @@ def home():
     global error
     global user
     global files
-    categories = None
+    categories =None
     current = "empty"
     if "conversation" not in session:
         session["conversation"] = []
@@ -354,11 +354,12 @@ def home():
             )
         else:
             print("files")
-            banksss = user.categories
+            categories = user.categories
+            banksss = user.info
             menn = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[
-                    {"role": "system", "content": instructions},
+                    {"role": "system", "content": bankInstructions},
                     {"role": "user", "content": str(categories)},
                 ]
             )
@@ -519,6 +520,8 @@ def advice():
         chat = ""
         if categories:
             chat = financial_advisor(categories)
+            print("---------")
+            print(categories)
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
