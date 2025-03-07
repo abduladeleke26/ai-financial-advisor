@@ -192,39 +192,55 @@ def financial_advisor(statements):
     return completion.choices[0].message.content, system, user
 
 
-def getStatements(file):
+
+def getStatements(file_path):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
-    encoded_file = base64.b64encode(file.read()).decode("utf-8")
+
+    with open(file_path, "rb") as file:
+        encoded_file = base64.b64encode(file.read()).decode("utf-8")
+
     payload = json.dumps({
-      "file_data": encoded_file
+        "file_data": encoded_file
     })
+
     headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'CLIENT-ID': 'vrfxybmMJwHG07oT9XzkL3AJVlUIpHsf81YMN1o',
-      'AUTHORIZATION': 'apikey aadeleke39:94326f3b42e354bf520da4532b1a45d7'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'CLIENT-ID': 'vrfxybmMJwHG07oT9XzkL3AJVlUIpHsf81YMN1o',
+        'AUTHORIZATION': 'apikey aadeleke39:94326f3b42e354bf520da4532b1a45d7'
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.post(url, headers=headers, data=payload)
 
-    response = response.json()
+    try:
+        response_json = response.json()
+    except json.JSONDecodeError:
+        print("Error: API response is not valid JSON.")
+        print(response.text)
+        return None, None
 
+    # Debug API response
+    print("API Response:", json.dumps(response_json, indent=4))
 
-
-    transactions = response.get("transactions")
-
-    categories = response.get("summaries")
-
+    # Check if transactions exist
+    transactions = response_json.get("transactions", [])
 
     statements = []
-
     for order in transactions:
         if order.get("credit_amount"):
-            statements.append(f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
+            statements.append({
+                "description": order.get("description"),
+                "amount": order.get("credit_amount"),
+                "date": order.get("date")
+            })
         else:
-            statements.append(f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
+            statements.append({
+                "description": order.get("description"),
+                "amount": f'-{order.get("debit_amount")}',
+                "date": order.get("date")
+            })
 
-    return statements, categories
+    return statements
 
 
 @app.before_request
