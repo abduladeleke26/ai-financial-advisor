@@ -375,11 +375,11 @@ def advice():
     if "conversation" not in session:
         session["conversation"] = []
 
-
+    # 🔹 Only re-fetch user if it's a valid User instance
     if user and isinstance(user, User):
-        user = db.session.query(User).filter_by(id=user.id).first()  
+        user = db.session.query(User).filter_by(id=user.id).first()
         if not user:
-            return jsonify({"error": "User not found"}), 400
+            return jsonify({"error": "User not found"}), 400  # Handle case if user no longer exists
 
     if not files:
         print("this is bank")
@@ -387,8 +387,8 @@ def advice():
 
         if current == categories and text_input:
             session["conversation"].append({"role": "user", "content": str(banksss)})
-            session["conversation"].append({"role": "system",
-                                            "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions. ANSWER IN HTML FORMAT!"})
+            session["conversation"].append(
+                {"role": "system", "content": "Respond as a financial advisor. Answer in HTML format!"})
             session["conversation"].append({"role": "user", "content": text_input})
 
         if current != categories:
@@ -415,12 +415,13 @@ def advice():
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
 
+            # 🔹 Re-fetch user before modifying it
             if user:
                 user = db.session.query(User).filter_by(id=user.id).first()
                 if user:
                     user.categories = json.dumps(categories)
                     user.info = json.dumps(bank_statement)
-                    user.files = True
+                    user.files = True  # Mark that a file has been uploaded
 
                     flag_modified(user, "categories")
                     flag_modified(user, "info")
@@ -439,8 +440,8 @@ def advice():
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
-            session["conversation"].append({"role": "system",
-                                            "content": "respond to everything kindly as a financial advisor. Look at past chats to answer questions. ANSWER IN HTML FORMAT!"})
+            session["conversation"].append(
+                {"role": "system", "content": "Respond as a financial advisor. Answer in HTML format!"})
             session["conversation"].append({"role": "user", "content": text_input})
 
         try:
