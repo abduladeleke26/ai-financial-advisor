@@ -471,9 +471,12 @@ def save():
         if user is None:
             print("User not found in the database")
 
+        print(user)
+        print(user.id)
         if isinstance(user, User):
             user = db.session.merge(user)
             try:
+                print("update")
                 user.categories = json.dumps(bankStatments)
                 user.info = None
                 user.files = True
