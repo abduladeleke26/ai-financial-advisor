@@ -448,16 +448,37 @@ def save():
     global banksss
     global categories
     global current
+    global user
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
+
+        print(user)
 
         categories = None
         current = "empty"
 
         file = request.files["pdf"]
         reader = PdfReader(file)
+        bankStatements = getStatements(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
+
+        if isinstance(user, User):
+            user = User.query.filter_by(id=user.id).first()
+
+            user.categories = json.dumps(bankStatements)
+            user.info = None
+            user.files = True
+
+            flag_modified(user, "categories")
+            flag_modified(user, "info")
+            flag_modified(user, "files")
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print("Database commit failed:", str(e))
+
         banksss = ting
 
     return jsonify({"value": banksss})
@@ -517,9 +538,11 @@ def token():
 
             user.categories = json.dumps(categorize)
             user.info = json.dumps(transactions)
+            user.files = False
 
             flag_modified(user, "categories")
             flag_modified(user, "info")
+            flag_modified(user, "files")
 
             try:
                 db.session.commit()
