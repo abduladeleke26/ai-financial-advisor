@@ -412,11 +412,11 @@ def advice():
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement = getStatements(file)
-
+            user = User.query.filter_by(id=session.get("user_id")).first()
             if user:
-                user = db.session.get(User, user.id)
+                
 
-                if user:  
+                if user:
                     user.categories = json.dumps(bank_statement)
                     user.info = None
                     user.files = True
@@ -508,7 +508,6 @@ def token():
     global t
     global categories
     global banksss
-    global user
     global files
 
     data = request.json
@@ -528,6 +527,7 @@ def token():
 
     if "access_token" in trans:
         session.clear()
+        user = User.query.filter_by(id=session.get("user_id")).first()
         t = trans["access_token"]
         time.sleep(15)
         print("yesssss")
