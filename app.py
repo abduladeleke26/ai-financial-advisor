@@ -221,6 +221,23 @@ def getStatements(file):
         else:
             statements.append(f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
 
+    user = User.query.filter_by(id=session.get("user_id")).first()
+    if isinstance(user, User):
+        print("its working")
+        user = db.session.query(User).filter_by(id=user.id).first()
+
+        user.categories = json.dumps(statements)
+        user.info = None
+        user.files = True
+
+        flag_modified(user, "categories")
+        flag_modified(user, "info")
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print("Database commit failed:", str(e))
     return statements
 
 
@@ -413,23 +430,6 @@ def advice():
             file = request.files["pdf"]
             bank_statement = getStatements(file)
 
-        
-
-        if user:
-            print("its working")
-            user.categories = json.dumps(bank_statement)
-            user.info = None
-            user.files = True
-
-            flag_modified(user, "categories")
-            flag_modified(user, "info")
-
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                print("Database commit failed:", str(e))
-
         text_input = request.form.get("text")
 
         chat = ""
@@ -438,8 +438,7 @@ def advice():
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
-            session["conversation"].append({"role": "system",
-                                            "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+            session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
             session["conversation"].append({"role": "user", "content": text_input})
 
         try:
