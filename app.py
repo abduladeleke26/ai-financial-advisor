@@ -448,11 +448,12 @@ def save():
     global banksss
     global categories
     global current
+    global files
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
 
-        categories = None
+        files = True
         current = "empty"
 
         file = request.files["pdf"]
