@@ -101,6 +101,7 @@ instructions = """
 
   go through each deposit and see what category fits the best
 
+  IF THERE ARE NO STATEMENTS DO NOT MAKE FAKE STATEMENTS. ASK THE USER TO UPLOAD BANK STATEMENTS.
 
   once everything is categorized sum up each category with the transaction in it and put it on a table in HTML FORMAT.
   
