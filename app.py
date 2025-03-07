@@ -369,7 +369,7 @@ def advice():
 
 
 
-    if files == True:
+    if files == False:
 
         text_input = request.form.get("text")
 
@@ -527,6 +527,7 @@ def token():
         session.clear()
         t = trans["access_token"]
         time.sleep(15)
+        print("yesssss")
         files = False
         transactions, categorize = get_transactions(t)
         if isinstance(user, User):
