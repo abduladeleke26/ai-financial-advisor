@@ -274,6 +274,7 @@ def home():
             )
         else:
             print("files")
+            banksss = user.categories
             menn = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[
