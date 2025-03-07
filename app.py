@@ -448,50 +448,14 @@ def save():
     global banksss
     global categories
     global current
-    global files
-    global user
-
-
-
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
 
-        files = True
+        categories = None
         current = "empty"
 
         file = request.files["pdf"]
-        bankStatments = getStatements(file)
-
-        if user is None:
-            print("User not found in the database")
-
-        user = User.query.filter_by(id=session.get("user_id")).first()
-
-        if user is None:
-            print("User not found in the database")
-
-        print(user)
-        print(user.id)
-        if isinstance(user, User):
-            user = db.session.merge(user)
-            try:
-                print("update")
-                user.categories = json.dumps(bankStatments)
-                user.info = None
-                user.files = True
-
-
-                flag_modified(user, "categories")
-                flag_modified(user, "info")
-                flag_modified(user, "files")
-
-                db.session.commit()
-
-            except Exception as e:
-                db.session.rollback()
-                print("Database commit failed:", str(e))
-
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
         banksss = ting
