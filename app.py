@@ -450,26 +450,33 @@ def save():
     global current
     global files
 
+    user_id = session.get("user_id")  
+
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 401
+
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
 
         files = True
-
         current = "empty"
 
         file = request.files["pdf"]
-        bankStatments = getStatements(file)
-        user = User.query.filter_by(id=session.get("user_id")).first()
+        bankStatements = getStatements(file)
+
+        user = User.query.filter_by(id=user_id).first()
 
         if isinstance(user, User):
-            user = db.session.query(User).filter_by(id=user.id).first()
+            user = db.session.merge(user)
 
-            user.categories = json.dumps(bankStatments)
+            user.categories = json.dumps(bankStatements)
             user.info = None
             user.files = True
 
             flag_modified(user, "categories")
             flag_modified(user, "info")
+
+            print("User data updated successfully")
 
             try:
                 db.session.commit()
@@ -479,9 +486,11 @@ def save():
 
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
-        banksss=ting
+        banksss = ting
 
     return jsonify({"value": banksss})
+
+
 
 
 @app.route("/get_link_token", methods=["GET"])
