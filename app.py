@@ -258,12 +258,11 @@ def getStatements(file):
 
     response = response.json()
 
-    print(response)
+
 
     transactions = response.get("transactions")
 
-    print("-----")
-    print(transactions)
+
     statements = []
 
     category_totals = defaultdict(float)
@@ -301,7 +300,9 @@ def getStatements(file):
             })
 
         category_totals[category] += round(-1 * float(amount), 2)
-
+    print(statements)
+    print("------------------")
+    print(category_totals)
     return statements, category_totals
 
 
