@@ -68,6 +68,8 @@ every table should have a title (withdrawals, deposits) in <h2></h2>
 
 make sure both tables are always separate they cannot touch.
 
+make sure it always end with 2 decimal points.
+
 keep deposits and withdrawals separate.
 
 Finally give financial advice. Talk about where the user did good and what needs to be improved.
@@ -124,6 +126,48 @@ instructions = """
 
   """
 
+classifyW = """
+go the transaction and see what category fits the best out of the following:
+
+    Home & Utilities  
+    Transportation  
+    Groceries
+    Personal & Family Care
+    Health 
+    Insurance
+    Restaurants & Dining
+    Shopping & Entertainment
+    Travel
+    Cash, Checks & Misc
+    Giving
+    Business Expenses
+    Education   
+    Finance 
+    Uncategorized 
+
+RESPOND WITH ONLY ONE OF THESE THIS THINGS DONT SAY ANYTHING ELSE BUT WHAT CATEGORY IT FITS IN
+
+"""
+
+classifyD = """
+go the transaction and see what category fits the best out of the following:
+
+    Other Income
+    Consulting
+    Deposits
+    Expense Reimbursement
+    Interest
+    Investment Income
+    Paychecks/Salary
+    Retirement Income
+    Sales
+    Services
+    Wages Paid
+
+RESPOND WITH ONLY ONE OF THESE THIS THINGS DONT SAY ANYTHING ELSE BUT WHAT CATEGORY IT FITS IN
+
+"""
+
 
 def get_transactions(token):
     start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
@@ -179,19 +223,21 @@ def get_transactions(token):
 
 
 def financial_advisor(statements):
-    system = {"role": "system", "content": instructions}
+  system = {"role": "system", "content": bankInstructions}
 
-    user = []
-    for statement in statements:
-        user.append({"role": "user", "content": statement})
+  user = []
+  for statement in statements:
+    user.append({"role": "user", "content": statement})
 
-    completion = client.chat.completions.create(
-        model="gpt-4-turbo",
-        messages=[system] + user,
 
-    )
+  completion = client.chat.completions.create(
+    model="gpt-4-turbo",
+    messages=[system]+user,
 
-    return completion.choices[0].message.content, system, user
+  )
+
+  return completion.choices[0].message.content
+
 
 
 
@@ -217,14 +263,45 @@ def getStatements(file):
 
     statements = []
 
+    category_totals = defaultdict(float)
     for order in transactions:
+
         if order.get("credit_amount"):
-            statements.append(f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
+            amount = order.get("credit_amount")
+            category = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[{"role": "system", "content": classifyD},
+                          {"role": "user", "content": order.get("description")}]
+            )
+            category = category.choices[0].message.content
+            statements.append({
+                "description": order.get("description"),
+                "amount": order.get("credit_amount"),
+                "date": order.get("date"),
+                "category": category,
+            })
+
         else:
-            statements.append(f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
+            amount = order.get("debit_amount")
+            category = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[{"role": "system", "content": classifyW},
+                          {"role": "user", "content": order.get("description")}]
+            )
 
+            category = category.choices[0].message.content
+            statements.append({
+                "description": order.get("description"),
+                "amount": f'-{order.get("debit_amount")}',
+                "date": order.get("date"),
+                "category": category,
+            })
 
-    return statements
+        category_totals[category] += round(-1 * float(amount), 2)
+
+    return statements, category_totals
+
+   
 
 
 @app.before_request
@@ -252,10 +329,8 @@ def home():
         greeting = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
-                {"role": "system",
-                 "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
-                {"role": "system",
-                 "content": f"the user name is {name}. welcome the user back. tell the user to either continue asking questions or to either upload bank statements or connect to their bank for advice on a different account"},
+                {"role": "system", "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
+                {"role": "system", "content": f"the user name is {name}. welcome the user back. tell the user to either continue asking questions or to either upload bank statements or connect to their bank for advice on a different account"},
                 {"role": "user", "content": "hello"}
             ],
         )
@@ -416,13 +491,13 @@ def advice():
         print("this is a file")
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
-            bank_statement = getStatements(file)
+            bank_statement, categories = getStatements(file)
 
             if isinstance(user, User):
                 user = User.query.filter_by(id=id).first()
 
-                user.categories = json.dumps(bank_statement)
-                user.info = None
+                user.categories = json.dumps(categories)
+                user.info = json.dumps(bank_statement)
                 user.files = True
 
                 flag_modified(user, "categories")
@@ -438,8 +513,8 @@ def advice():
         text_input = request.form.get("text")
 
         chat = ""
-        if bank_statement:
-            chat, system, userr = financial_advisor(bank_statement)
+        if categories:
+            chat, system, userr = financial_advisor(categories)
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
@@ -451,9 +526,13 @@ def advice():
                 ai_response = chat.replace("```", "")
                 ai_response = ai_response.replace("html", "")
             else:
+                transactions_text = ""
+                for statement in bank_statement:
+                    transactions_text += f"{statement} \n"
+
                 completion = client.chat.completions.create(
                     model="gpt-4-turbo",
-                    messages=[{"role": "user", "content": str(banksss)}] + session["conversation"]
+                    messages=[{"role": "user", "content": str(transactions_text)}] + session["conversation"]
                 )
                 ai_response = completion.choices[0].message.content.replace("```", "")
                 ai_response = ai_response.replace("html", "")
