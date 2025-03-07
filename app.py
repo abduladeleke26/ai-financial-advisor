@@ -411,8 +411,16 @@ def advice():
         print("this is a file")
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
+            print(file.content_type)
+
+
             bank_statement = getStatements(file)
 
+            if bank_statement:
+                return jsonify({"status": "success", "statements": bank_statement})
+            else:
+                return jsonify({"status": "error", "message": "Failed to process PDF"}), 400
+            
         text_input = request.form.get("text")
 
         chat = ""
