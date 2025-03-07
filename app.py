@@ -254,13 +254,14 @@ def home():
     global banksss
     global current
     global logged_in
-    global user
     global error
     categories = None
     current = "empty"
     if "conversation" not in session:
         session["conversation"] = []
     session.permanent = True
+
+    user = User.query.filter_by(id=session.get("user_id")).first()
     if logged_in and isinstance(user, User):
         greeting = client.chat.completions.create(
             model="gpt-4-turbo",
