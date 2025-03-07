@@ -193,11 +193,11 @@ def financial_advisor(statements):
 
 
 
-def getStatements(file_path):
+def getStatements(file):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
 
-    with open(file_path, "rb") as file:
-        encoded_file = base64.b64encode(file.read()).decode("utf-8")
+    # Read the file directly from FileStorage object
+    encoded_file = base64.b64encode(file.read()).decode("utf-8")
 
     payload = json.dumps({
         "file_data": encoded_file
