@@ -195,50 +195,31 @@ def financial_advisor(statements):
 
 def getStatements(file):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
-
-    # Read the file directly from FileStorage object
     encoded_file = base64.b64encode(file.read()).decode("utf-8")
-
     payload = json.dumps({
-        "file_data": encoded_file
+      "file_data": encoded_file
     })
-
     headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'CLIENT-ID': 'vrfxybmMJwHG07oT9XzkL3AJVlUIpHsf81YMN1o',
-        'AUTHORIZATION': 'apikey aadeleke39:94326f3b42e354bf520da4532b1a45d7'
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'CLIENT-ID': os.environ.get('OTHER_CLIENT'),
+      'AUTHORIZATION': os.environ.get('OTHER_KEY')
     }
 
-    response = requests.post(url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload)
 
-    try:
-        response_json = response.json()
-    except json.JSONDecodeError:
-        print("Error: API response is not valid JSON.")
-        print(response.text)
-        return None, None
+    response = response.json()
 
-    # Debug API response
-    print("API Response:", json.dumps(response_json, indent=4))
+    transactions = response.get("transactions")
 
-    # Check if transactions exist
-    transactions = response_json.get("transactions", [])
 
     statements = []
+
     for order in transactions:
         if order.get("credit_amount"):
-            statements.append({
-                "description": order.get("description"),
-                "amount": order.get("credit_amount"),
-                "date": order.get("date")
-            })
+            statements.append(f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
         else:
-            statements.append({
-                "description": order.get("description"),
-                "amount": f'-{order.get("debit_amount")}',
-                "date": order.get("date")
-            })
+            statements.append(f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
 
     return statements
 
@@ -436,7 +417,7 @@ def advice():
 
         chat = ""
         if bank_statement:
-            chat, system, userr = financial_advisor(bank_statement)
+            chat, system, user = financial_advisor(bank_statement)
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
