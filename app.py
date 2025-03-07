@@ -360,6 +360,7 @@ def advice():
     global categories
     global current
     global files
+    global user
     bank_statement = ""
 
     session.permanent = True
@@ -412,7 +413,7 @@ def advice():
             file = request.files["pdf"]
             bank_statement = getStatements(file)
 
-        user = User.query.filter_by(id=session.get("user_id")).first()
+        
 
         if user:
             print("its working")
