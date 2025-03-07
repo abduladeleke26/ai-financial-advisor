@@ -47,6 +47,7 @@ name = None
 user = None
 files = False
 error = None
+id = None
 current = "empty"
 
 bankInstructions = """
@@ -306,6 +307,7 @@ def login():
     global logged_in
     global error
     global user
+    global id
     username = request.form['username']
     password = request.form['password']
     user = User.query.filter_by(username=username).first()
@@ -313,6 +315,7 @@ def login():
         name = user.full_name
         logged_in = True
         error = None
+        id = user.id
         session["user_id"] = user.id
         return redirect(url_for('home'))
     else:
@@ -359,6 +362,7 @@ def advice():
     global current
     global files
     global user
+    global id
     bank_statement = ""
 
     session.permanent = True
@@ -412,7 +416,7 @@ def advice():
             bank_statement = getStatements(file)
 
             if isinstance(user, User):
-                user = User.query.filter_by(id=user.id).first()
+                user = User.query.filter_by(id=id).first()
 
                 user.categories = json.dumps(bank_statement)
                 user.info = None
@@ -507,6 +511,7 @@ def token():
     global banksss
     global files
     global user
+    global id
 
     data = request.json
     public_token = data.get("public_token")
@@ -532,7 +537,7 @@ def token():
         files = False
         transactions, categorize = get_transactions(t)
         if isinstance(user, User):
-            user = User.query.filter_by(id=user.id).first()
+            user = User.query.filter_by(id=id).first()
 
             user.categories = json.dumps(categorize)
             user.info = json.dumps(transactions)
