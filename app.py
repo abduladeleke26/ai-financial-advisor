@@ -195,9 +195,7 @@ def financial_advisor(statements):
 def getStatements(file):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
     encoded_file = base64.b64encode(file.read()).decode("utf-8")
-    payload = json.dumps({
-        "file_data": encoded_file
-    })
+    payload = json.dumps({"file_data": encoded_file})
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -207,16 +205,19 @@ def getStatements(file):
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    response = response.json()
+    try:
+        response_data = response.json()
+    except json.JSONDecodeError:
+        print("Error: Response is not a valid JSON")
+        return []
 
+    transactions = response_data.get("transactions", [])  
 
-
-    transactions = response.get("transactions")
-
-
+    if not transactions:
+        print("Warning: No transactions found in response")
+        return []
 
     statements = []
-
     for order in transactions:
         if order.get("credit_amount"):
             statements.append(
@@ -224,10 +225,8 @@ def getStatements(file):
         else:
             statements.append(
                 f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
-    print("------------")
-    print(statements)
-    print("------------")
 
+    print("Extracted Statements:", statements)
     return statements
 
 
