@@ -418,6 +418,11 @@ def advice():
 
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
+
+            
+            if not file.filename.lower().endswith(".pdf") or file.mimetype != "application/pdf":
+                return jsonify({"error": "Invalid file type. Please upload a PDF file."}), 400
+
             bank_statement = getStatements(file)
 
         text_input = request.form.get("text")
@@ -464,11 +469,15 @@ def save():
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
-
         categories = None
         current = "empty"
         files = True
         file = request.files["pdf"]
+
+
+        if not file.filename.lower().endswith(".pdf") or file.mimetype != "application/pdf":
+            return jsonify({"error": "Invalid file type. Please upload a PDF file."}), 400
+
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
         banksss = ting
