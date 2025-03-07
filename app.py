@@ -415,6 +415,7 @@ def advice():
         user = User.query.filter_by(id=session.get("user_id")).first()
 
         if user:
+            print("its working")
             user.categories = json.dumps(bank_statement)
             user.info = None
             user.files = True
