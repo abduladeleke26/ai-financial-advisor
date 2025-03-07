@@ -506,7 +506,6 @@ def token():
 
     if "access_token" in trans:
         session.clear()
-        user = User.query.filter_by(id=session.get("user_id")).first()
         t = trans["access_token"]
         time.sleep(15)
         print(user)
@@ -514,11 +513,10 @@ def token():
         files = False
         transactions, categorize = get_transactions(t)
         if isinstance(user, User):
-            user = db.session.query(User).filter_by(id=user.id).first()
+            user = User.query.filter_by(id=user.id).first()
 
             user.categories = json.dumps(categorize)
             user.info = json.dumps(transactions)
-            user.files = False
 
             flag_modified(user, "categories")
             flag_modified(user, "info")
