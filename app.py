@@ -358,6 +358,7 @@ def advice():
     global categories
     global current
     global files
+    global user
     bank_statement = ""
 
     session.permanent = True
@@ -409,6 +410,23 @@ def advice():
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement = getStatements(file)
+
+            if isinstance(user, User):
+                user = User.query.filter_by(id=user.id).first()
+
+                user.categories = json.dumps(bank_statement)
+                user.info = None
+                user.files = True
+
+                flag_modified(user, "categories")
+                flag_modified(user, "info")
+                flag_modified(user, "files")
+
+                try:
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    print("Database commit failed:", str(e))
 
         text_input = request.form.get("text")
 
