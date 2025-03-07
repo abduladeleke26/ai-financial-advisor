@@ -368,91 +368,83 @@ def advice():
     global current
     global files
     global user
-
     bank_statement = ""
-    session.permanent = True
 
+    session.permanent = True
     if "conversation" not in session:
         session["conversation"] = []
 
-    # 🔹 Only re-fetch user if it's a valid User instance
-    if user and isinstance(user, User):
-        user = db.session.query(User).filter_by(id=user.id).first()
-        if not user:
-            return jsonify({"error": "User not found"}), 400  # Handle case if user no longer exists
 
-    if not files:
-        print("this is bank")
+
+    if files == True:
+
         text_input = request.form.get("text")
 
-        if current == categories and text_input:
-            session["conversation"].append({"role": "user", "content": str(banksss)})
-            session["conversation"].append(
-                {"role": "system", "content": "Respond as a financial advisor. Answer in HTML format!"})
-            session["conversation"].append({"role": "user", "content": text_input})
+
+
+        if current == categories:
+            if text_input:
+                session["conversation"].append({"role": "user", "content": str(banksss)})
+                session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT AND MAKE SURE ITS STRUCTURED WELL SO THE USER CAN READ WELL INSTEAD OF A BIG PARAGRAPH! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+                session["conversation"].append({"role": "user", "content": text_input})
+
 
         if current != categories:
-            session["conversation"].append({"role": "system", "content": bankInstructions})
+
+            session["conversation"].append({"role": "system","content": bankInstructions})
             current = categories
+
+
 
         try:
             completion = client.chat.completions.create(
                 model="gpt-4-turbo",
-                messages=session["conversation"]
+                messages = session["conversation"]
             )
-            ai_response = completion.choices[0].message.content.replace("```", "").replace("html", "")
+            ai_response = completion.choices[0].message.content.replace("```", "")
+            ai_response = ai_response.replace("html", "")
             session["conversation"].append({"role": "assistant", "content": ai_response})
+
             session.modified = True
 
         except Exception as e:
             ai_response = f"Error connecting to AI service: {str(e)}"
 
+
         return jsonify({"reply": ai_response})
 
     else:
-        print("this is file")
+
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
 
-            # 🔹 Re-fetch user before modifying it
-            if user:
-                user = db.session.query(User).filter_by(id=user.id).first()
-                if user:
-                    user.categories = json.dumps(categories)
-                    user.info = json.dumps(bank_statement)
-                    user.files = True  # Mark that a file has been uploaded
-
-                    flag_modified(user, "categories")
-                    flag_modified(user, "info")
-
-                    try:
-                        db.session.commit()
-                    except Exception as e:
-                        db.session.rollback()
-                        print("Database commit failed:", str(e))
-
         text_input = request.form.get("text")
 
         chat = ""
-        if bank_statement:
-            chat, system, userr = financial_advisor(bank_statement)
+        if current != categories:
+            chat, system, user = financial_advisor(str(categories))
             session["conversation"].append({"role": "assistant", "content": chat})
+            current = categories
 
-        if text_input:
-            session["conversation"].append(
-                {"role": "system", "content": "Respond as a financial advisor. Answer in HTML format!"})
-            session["conversation"].append({"role": "user", "content": text_input})
+        if current == categories:
+            if text_input:
+                session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+                session["conversation"].append({"role": "user", "content": str(bank_statement)})
+                session["conversation"].append({"role": "user", "content": text_input})
+
 
         try:
             if len(chat) > 3:
-                ai_response = chat.replace("```", "").replace("html", "")
+                ai_response = chat.replace("```", "")
+                ai_response = ai_response.replace("html", "")
             else:
                 completion = client.chat.completions.create(
                     model="gpt-4-turbo",
                     messages=[{"role": "user", "content": str(banksss)}] + session["conversation"]
                 )
-                ai_response = completion.choices[0].message.content.replace("```", "").replace("html", "")
+                ai_response = completion.choices[0].message.content.replace("```", "")
+                ai_response = ai_response.replace("html", "")
                 session["conversation"].append({"role": "assistant", "content": ai_response})
 
             session.modified = True
@@ -461,6 +453,7 @@ def advice():
             ai_response = f"Error connecting to AI service: {str(e)}"
 
         return jsonify({"reply": ai_response})
+
 
 
 @app.route('/save', methods=['POST'])
@@ -482,6 +475,24 @@ def save():
         reader = PdfReader(file)
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
         banksss = ting
+
+        bank_statement, categories = getStatements(file)
+
+        if user:
+            user = User.query.filter_by(id=user.id).first()
+
+            user.categories = json.dumps(bank_statement)
+            user.info = None
+
+            flag_modified(user, "categories")
+            flag_modified(user, "info")
+
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print("Database commit failed:", str(e))
+        db.session.commit()
 
 
     return jsonify({"value": banksss})
