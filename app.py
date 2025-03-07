@@ -449,11 +449,10 @@ def save():
     global categories
     global current
     global files
+    global user
 
-    user_id = session.get("user_id")  
 
-    if not user_id:
-        return jsonify({"error": "User not logged in"}), 401
+
 
     if "pdf" in request.files and request.files["pdf"].filename:
         session.clear()
@@ -462,21 +461,19 @@ def save():
         current = "empty"
 
         file = request.files["pdf"]
-        bankStatements = getStatements(file)
+        bankStatments = getStatements(file)
 
-        user = User.query.filter_by(id=user_id).first()
+        user = User.query.filter_by(id=session.get("user_id")).first()
 
         if isinstance(user, User):
             user = db.session.merge(user)
 
-            user.categories = json.dumps(bankStatements)
+            user.categories = json.dumps(bankStatments)
             user.info = None
             user.files = True
 
             flag_modified(user, "categories")
             flag_modified(user, "info")
-
-            print("User data updated successfully")
 
             try:
                 db.session.commit()
@@ -489,7 +486,6 @@ def save():
         banksss = ting
 
     return jsonify({"value": banksss})
-
 
 
 
@@ -516,6 +512,7 @@ def token():
     global categories
     global banksss
     global files
+    global user
 
     data = request.json
     public_token = data.get("public_token")
@@ -537,6 +534,7 @@ def token():
         user = User.query.filter_by(id=session.get("user_id")).first()
         t = trans["access_token"]
         time.sleep(15)
+        print(user)
         print("yesssss")
         files = False
         transactions, categorize = get_transactions(t)
