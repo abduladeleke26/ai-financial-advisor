@@ -255,6 +255,7 @@ def home():
     global current
     global logged_in
     global error
+    global user
     categories = None
     current = "empty"
     if "conversation" not in session:
@@ -322,6 +323,7 @@ def login():
     global name
     global logged_in
     global error
+    global user
     username = request.form['username']
     password = request.form['password']
 
