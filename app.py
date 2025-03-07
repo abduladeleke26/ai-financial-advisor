@@ -320,7 +320,6 @@ def home():
 def login():
     global name
     global logged_in
-    global user
     global error
     username = request.form['username']
     password = request.form['password']
@@ -330,6 +329,7 @@ def login():
         name = user.full_name
         logged_in = True
         error = None
+        session["user_id"] = user.id
         return redirect(url_for('home'))
     else:
         error = "Username or Password is Wrong"
@@ -348,7 +348,6 @@ def signupfr():
         existing_user = User.query.filter_by(username=username).first()
 
         if existing_user:
-            flash('Username is already taken. Please choose another one.', 'danger')
             message = "This user is taken."
             return render_template('sign up.html', message=message)
 
@@ -365,9 +364,7 @@ def signupfr():
 @app.route('/logout')
 def logout():
     global logged_in
-    global user
     logged_in = False
-    user = None
     return redirect(url_for('home'))
 
 
@@ -377,7 +374,6 @@ def advice():
     global categories
     global current
     global files
-    global user
     bank_statement = ""
 
     session.permanent = True
