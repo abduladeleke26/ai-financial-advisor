@@ -417,22 +417,18 @@ def advice():
 
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
-            bank_statement, categories = getStatements(file)
+            bank_statement = getStatements(file)
 
         text_input = request.form.get("text")
 
         chat = ""
-        if current != categories:
-            chat, system, user = financial_advisor(str(categories))
+        if bank_statement:
+            chat, system, user = financial_advisor(bank_statement)
             session["conversation"].append({"role": "assistant", "content": chat})
-            current = categories
 
-        if current == categories:
-            if text_input:
-                session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
-                session["conversation"].append({"role": "user", "content": str(bank_statement)})
-                session["conversation"].append({"role": "user", "content": text_input})
-
+        if text_input:
+            session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+            session["conversation"].append({"role": "user", "content": text_input})
 
         try:
             if len(chat) > 3:
