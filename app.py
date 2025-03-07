@@ -411,15 +411,7 @@ def advice():
         print("this is a file")
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
-            print(file.content_type)
-
-
             bank_statement = getStatements(file)
-
-            if bank_statement:
-                return jsonify({"status": "success", "statements": bank_statement})
-            else:
-                return jsonify({"status": "error", "message": "Failed to process PDF"}), 400
 
         text_input = request.form.get("text")
 
@@ -429,7 +421,8 @@ def advice():
             session["conversation"].append({"role": "assistant", "content": chat})
 
         if text_input:
-            session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+            session["conversation"].append({"role": "system",
+                                            "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
             session["conversation"].append({"role": "user", "content": text_input})
 
         try:
@@ -451,7 +444,6 @@ def advice():
             ai_response = f"Error connecting to AI service: {str(e)}"
 
         return jsonify({"reply": ai_response})
-
 
 
 @app.route('/save', methods=['POST'])
