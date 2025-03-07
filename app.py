@@ -205,13 +205,15 @@ def getStatements(file):
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
+    print(response)
+
     try:
         response_data = response.json()
     except json.JSONDecodeError:
         print("Error: Response is not a valid JSON")
         return []
 
-    transactions = response_data.get("transactions", [])  
+    transactions = response_data.get("transactions", [])
 
     if not transactions:
         print("Warning: No transactions found in response")
