@@ -195,41 +195,36 @@ def financial_advisor(statements):
 def getStatements(file):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
     encoded_file = base64.b64encode(file.read()).decode("utf-8")
-    payload = json.dumps({"file_data": encoded_file})
+    payload = json.dumps({
+      "file_data": encoded_file
+    })
     headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'CLIENT-ID': os.environ.get('OTHER_CLIENT'),
-        'AUTHORIZATION': os.environ.get('OTHER_KEY')
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'CLIENT-ID': 'vrfxybmMJwHG07oT9XzkL3AJVlUIpHsf81YMN1o',
+      'AUTHORIZATION': 'apikey aadeleke39:94326f3b42e354bf520da4532b1a45d7'
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    print(response.json())
+    response = response.json()
 
-    try:
-        response_data = response.json()
-    except json.JSONDecodeError:
-        print("Error: Response is not a valid JSON")
-        return []
 
-    transactions = response_data.get("transactions", [])
 
-    if not transactions:
-        print("Warning: No transactions found in response")
-        return []
+    transactions = response.get("transactions")
+
+    categories = response.get("summaries")
+
 
     statements = []
+
     for order in transactions:
         if order.get("credit_amount"):
-            statements.append(
-                f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
+            statements.append(f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
         else:
-            statements.append(
-                f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
+            statements.append(f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
 
-    print("Extracted Statements:", statements)
-    return statements
+    return statements, categories
 
 
 @app.before_request
@@ -416,13 +411,9 @@ def advice():
 
     else:
 
+        print("this is a file")
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
-
-            
-            if not file.filename.lower().endswith(".pdf") or file.mimetype != "application/pdf":
-                return jsonify({"error": "Invalid file type. Please upload a PDF file."}), 400
-
             bank_statement = getStatements(file)
 
         text_input = request.form.get("text")
