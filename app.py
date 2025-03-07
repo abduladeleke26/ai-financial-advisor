@@ -266,6 +266,7 @@ def home():
         current = categories
         files = user.files
         if not files:
+            print("bank")
             menn = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[
@@ -274,6 +275,7 @@ def home():
                 ]
             )
         else:
+            print("files")
             menn = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[
@@ -406,7 +408,7 @@ def advice():
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
             if isinstance(user, User):
-                user = User.query.filter_by(id=user.id).first()
+                user = db.session.query(User).filter_by(id=user.id).first()
 
                 user.categories = json.dumps(bank_statement)
                 user.info = None
@@ -524,7 +526,7 @@ def token():
         files = False
         transactions, categorize = get_transactions(t)
         if isinstance(user, User):
-            user = User.query.filter_by(id=user.id).first()
+            user = db.session.query(User).filter_by(id=user.id).first()
 
             user.categories = json.dumps(categorize)
             user.info = json.dumps(transactions)
