@@ -205,7 +205,7 @@ def getStatements(file):
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    print(response)
+    print(response.json())
 
     try:
         response_data = response.json()
