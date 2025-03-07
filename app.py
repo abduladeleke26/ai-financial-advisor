@@ -195,7 +195,9 @@ def financial_advisor(statements):
 def getStatements(file):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
     encoded_file = base64.b64encode(file.read()).decode("utf-8")
-    payload = json.dumps({"file_data": encoded_file})
+    payload = json.dumps({
+        "file_data": encoded_file
+    })
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -204,33 +206,29 @@ def getStatements(file):
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
-    response_data = response.json()
 
-    # Debugging print
-    print("API Response:", response_data)
+    response = response.json()
 
-    transactions = response_data.get("transactions")
-    categories = response_data.get("summaries")
 
-    if transactions is None:
-        print("Error: API did not return transactions")
-        return [], {}  # Return empty lists
+
+    transactions = response.get("transactions")
+
+
 
     statements = []
+
     for order in transactions:
         if order.get("credit_amount"):
             statements.append(
-                f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}'
-            )
+                f'{{"description": "{order.get("description")}", "amount": "{order.get("credit_amount")}", "date": "{order.get("date")}"}}')
         else:
             statements.append(
-                f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}'
-            )
+                f'{{"description": "{order.get("description")}", "amount": "-{order.get("debit_amount")}", "date": "{order.get("date")}"}}')
+    print("------------")
+    print(statements)
+    print("------------")
 
-    print("Processed Statements:", statements)
-    print("Categories:", categories)
-
-    return statements, categories
+    return statements
 
 
 @app.before_request
@@ -474,7 +472,7 @@ def save():
         ting = "\n".join([page.extract_text() or "" for page in reader.pages])
         banksss = ting
 
-        bank_statement, categories = getStatements(file)
+        bank_statement = getStatements(file)
 
         if user:
             user = User.query.filter_by(id=user.id).first()
