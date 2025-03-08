@@ -284,7 +284,7 @@ def getStatements(file):
             })
 
         else:
-            amount = f"-{order.get("debit_amount")}"
+            amount = -1 * float(order.get("debit_amount"))
             category = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[{"role": "system", "content": classifyW},
@@ -294,7 +294,7 @@ def getStatements(file):
             category = category.choices[0].message.content
             statements.append({
                 "description": order.get("description"),
-                "amount": f'-{order.get("debit_amount")}',
+                "amount": (-1 * float(order.get("debit_amount"))),
                 "date": order.get("date"),
                 "category": category,
             })
