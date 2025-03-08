@@ -55,7 +55,7 @@ youre a financial advisor making a html page inside of <div></div>
 
 TITLE SHOULD BE ON ITS OWN LINE IN <h1></h1>
 
-take the category and the amounts given to you inside of the defaultdict and make a html table.
+take the category and the amounts given to you and make a html table.
 
 if the amount starts with "-" it is a withdrawal.
 
@@ -519,7 +519,7 @@ def advice():
 
         chat = ""
         if categories:
-            chat = financial_advisor(categories)
+            chat = financial_advisor(str(categories))
             print("---------")
             print(categories)
             session["conversation"].append({"role": "assistant", "content": chat})
