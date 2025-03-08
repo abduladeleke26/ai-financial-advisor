@@ -227,7 +227,6 @@ def get_transactions(token):
 
 
 def financial_advisor(statements):
-    print(statements)
     system = {"role": "system", "content": bankInstructions}
 
     user = []
@@ -273,7 +272,7 @@ def getStatements(file):
                 messages=[{"role": "system", "content": classifyD},
                           {"role": "user", "content": order.get("description")}]
             )
-            category = category.choices[0].message.content
+            category = category.choices[0].message.content.replace("Gas & Fuel", "Transportation")
             statements.append({
                 "description": order.get("description"),
                 "amount": amount,
@@ -342,7 +341,6 @@ def home():
         current = categories
         files = user.files
         if not files:
-            print("bank")
             menn = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[
@@ -351,7 +349,6 @@ def home():
                 ]
             )
         else:
-            print("files")
             categories = user.categories
             banksss = user.info
             menn = client.chat.completions.create(
@@ -453,7 +450,6 @@ def advice():
     if files == False:
 
         text_input = request.form.get("text")
-        print("this is a bank")
 
         if current == categories:
             if text_input:
@@ -483,14 +479,10 @@ def advice():
 
     else:
 
-        print("this is a file")
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
             banksss = bank_statement
-            print(bank_statement)
-            print("---------")
-            print(categories)
             if isinstance(user, User):
                 user = User.query.filter_by(id=id).first()
 
@@ -513,8 +505,6 @@ def advice():
         chat = ""
         if current != categories:
             chat = financial_advisor(str(categories))
-            print("---------")
-            print(categories)
             session["conversation"].append({"role": "assistant", "content": chat})
             current = categories
         if current == categories:
@@ -528,12 +518,11 @@ def advice():
                 ai_response = ai_response.replace("html", "")
                 chat = ""
             else:
-                print("innat hoe")
                 transactions_text = ""
                 for statement in banksss:
                     transactions_text += f"{statement} \n"
 
-                print(banksss)
+
 
                 completion = client.chat.completions.create(
                     model="gpt-4-turbo",
@@ -618,8 +607,6 @@ def token():
         session.clear()
         t = trans["access_token"]
         time.sleep(15)
-        print(user)
-        print("yesssss")
         files = False
         transactions, categorize = get_transactions(t)
         if isinstance(user, User):
