@@ -55,7 +55,8 @@ youre a financial advisor making a html page inside of <div></div>
 
 TITLE SHOULD BE ON ITS OWN LINE IN <h1></h1>
 
-take the category and the amounts given to you and make a html table.
+take the category and the amounts given to you and SPECIFICALLY make a html format table using <table></table> with borders.
+
 
 if the amount starts with "-" it is a withdrawal.
 
@@ -106,7 +107,7 @@ instructions = """
   IF THERE ARE NO STATEMENTS DO NOT MAKE FAKE STATEMENTS. ASK THE USER TO UPLOAD BANK STATEMENTS.
 
   once everything is categorized sum up each category with the transaction in it and put it on a table in HTML FORMAT.
-  
+
   THERE SHOULD NEVER BE TWO ROWS WITH THE SAME NAME. SUM EVERYTHING UP.
 
   no table should have two of the same categories.
@@ -230,38 +231,32 @@ def financial_advisor(statements):
     for statement in statements:
         user.append({"role": "user", "content": statement})
 
-
     completion = client.chat.completions.create(
-    model="gpt-4-turbo",
-    messages=[system]+user,
+        model="gpt-4-turbo",
+        messages=[system] + user,
     )
 
     return completion.choices[0].message.content
-
-
 
 
 def getStatements(file):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
     encoded_file = base64.b64encode(file.read()).decode("utf-8")
     payload = json.dumps({
-      "file_data": encoded_file
+        "file_data": encoded_file
     })
     headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'CLIENT-ID': os.environ.get('OTHER_CLIENT'),
-      'AUTHORIZATION': os.environ.get('OTHER_KEY')
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'CLIENT-ID': os.environ.get('OTHER_CLIENT'),
+        'AUTHORIZATION': os.environ.get('OTHER_KEY')
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
     response = response.json()
 
-
-
     transactions = response.get("transactions")
-
 
     statements = []
 
@@ -322,7 +317,7 @@ def home():
     global error
     global user
     global files
-    categories =None
+    categories = None
     current = "empty"
     if "conversation" not in session:
         session["conversation"] = []
@@ -331,8 +326,10 @@ def home():
         greeting = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
-                {"role": "system", "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
-                {"role": "system", "content": f"the user name is {name}. welcome the user back. tell the user to either continue asking questions or to either upload bank statements or connect to their bank for advice on a different account"},
+                {"role": "system",
+                 "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
+                {"role": "system",
+                 "content": f"the user name is {name}. welcome the user back. tell the user to either continue asking questions or to either upload bank statements or connect to their bank for advice on a different account"},
                 {"role": "user", "content": "hello"}
             ],
         )
@@ -426,7 +423,7 @@ def signupfr():
         return redirect(url_for('home'))
     else:
         message = "password and confirm password is not the same"
-        return render_template('sign up.html',message=message)
+        return render_template('sign up.html', message=message)
 
 
 @app.route('/logout')
@@ -450,13 +447,10 @@ def advice():
     if "conversation" not in session:
         session["conversation"] = []
 
-
-
     if files == False:
 
         text_input = request.form.get("text")
         print("this is a bank")
-
 
         if current == categories:
             if text_input:
@@ -464,18 +458,14 @@ def advice():
                 session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT AND MAKE SURE ITS STRUCTURED WELL SO THE USER CAN READ WELL INSTEAD OF A BIG PARAGRAPH! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
                 session["conversation"].append({"role": "user", "content": text_input})
 
-
         if current != categories:
-
-            session["conversation"].append({"role": "system","content": bankInstructions})
+            session["conversation"].append({"role": "system", "content": bankInstructions})
             current = categories
-
-
 
         try:
             completion = client.chat.completions.create(
                 model="gpt-4-turbo",
-                messages = session["conversation"]
+                messages=session["conversation"]
             )
             ai_response = completion.choices[0].message.content.replace("```", "")
             ai_response = ai_response.replace("html", "")
@@ -486,7 +476,6 @@ def advice():
         except Exception as e:
             ai_response = f"Error connecting to AI service: {str(e)}"
 
-
         return jsonify({"reply": ai_response})
 
     else:
@@ -495,7 +484,10 @@ def advice():
         if "pdf" in request.files and request.files["pdf"].filename:
             file = request.files["pdf"]
             bank_statement, categories = getStatements(file)
-
+            banksss = bank_statement
+            print(bank_statement)
+            print("---------")
+            print(categories)
             if isinstance(user, User):
                 user = User.query.filter_by(id=id).first()
 
@@ -516,24 +508,29 @@ def advice():
         text_input = request.form.get("text")
 
         chat = ""
-        if categories:
+        if current != categories:
             chat = financial_advisor(str(categories))
             print("---------")
             print(categories)
             session["conversation"].append({"role": "assistant", "content": chat})
-
-        if text_input:
-            session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
-            session["conversation"].append({"role": "user", "content": text_input})
+            current = categories
+        if current == categories:
+            if text_input:
+                session["conversation"].append({"role": "system","content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+                session["conversation"].append({"role": "user", "content": text_input})
 
         try:
             if len(chat) > 3:
                 ai_response = chat.replace("```", "")
                 ai_response = ai_response.replace("html", "")
+                chat = ""
             else:
+                print("innat hoe")
                 transactions_text = ""
-                for statement in bank_statement:
+                for statement in banksss:
                     transactions_text += f"{statement} \n"
+
+                print(banksss)
 
                 completion = client.chat.completions.create(
                     model="gpt-4-turbo",
@@ -571,7 +568,6 @@ def save():
         banksss = ting
 
     return jsonify({"value": banksss})
-
 
 
 @app.route("/get_link_token", methods=["GET"])
