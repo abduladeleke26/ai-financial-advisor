@@ -269,7 +269,7 @@ def getStatements(file):
     for order in transactions:
 
         if order.get("credit_amount"):
-            amount = order.get("credit_amount")
+            amount = float(order["credit_amount"])
             category = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[{"role": "system", "content": classifyD},
@@ -278,13 +278,14 @@ def getStatements(file):
             category = category.choices[0].message.content
             statements.append({
                 "description": order.get("description"),
-                "amount": order.get("credit_amount"),
+                "amount": amount,
                 "date": order.get("date"),
+                "type": "Deposit",
                 "category": category,
             })
 
         else:
-            amount = -1 * float(order.get("debit_amount"))
+            amount = -float(order.get("debit_amount"))
             category = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[{"role": "system", "content": classifyW},
@@ -294,18 +295,15 @@ def getStatements(file):
             category = category.choices[0].message.content
             statements.append({
                 "description": order.get("description"),
-                "amount": (-1 * float(order.get("debit_amount"))),
+                "amount": amount,
                 "date": order.get("date"),
+                "type": "Withdrawal",
                 "category": category,
             })
 
-        category_totals[category] += round(-1 * float(amount), 2)
-    print(statements)
-    print("------------------")
-    print(category_totals)
+        category_totals[category] += round(amount, 2)
+
     return statements, category_totals
-
-
 
 
 @app.before_request
