@@ -129,6 +129,8 @@ instructions = """
 
 classifyW = """
 go the transaction and see what category fits the best out of the following:
+RESPOND WITH ONLY ONE OF THESE THIS THINGS DONT SAY ANYTHING ELSE BUT WHAT CATEGORY IT FITS IN.
+DO NOT MAKE ANY NEW CATEGORIES ONLY USE THE CATEGORIES I HAVE YOU.
 
     Home & Utilities  
     Transportation  
@@ -146,12 +148,14 @@ go the transaction and see what category fits the best out of the following:
     Finance 
     Uncategorized 
 
-RESPOND WITH ONLY ONE OF THESE THIS THINGS DONT SAY ANYTHING ELSE BUT WHAT CATEGORY IT FITS IN
+
 
 """
 
 classifyD = """
 go the transaction and see what category fits the best out of the following:
+RESPOND WITH ONLY ONE OF THESE THIS THINGS DONT SAY ANYTHING ELSE BUT WHAT CATEGORY IT FITS IN.
+DO NOT MAKE ANY NEW CATEGORIES ONLY USE THE CATEGORIES I HAVE YOU.
 
     Other Income
     Consulting
@@ -165,7 +169,6 @@ go the transaction and see what category fits the best out of the following:
     Services
     Wages Paid
 
-RESPOND WITH ONLY ONE OF THESE THIS THINGS DONT SAY ANYTHING ELSE BUT WHAT CATEGORY IT FITS IN
 
 """
 
