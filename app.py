@@ -223,20 +223,20 @@ def get_transactions(token):
 
 
 def financial_advisor(statements):
-  system = {"role": "system", "content": bankInstructions}
+    print(statements)
+    system = {"role": "system", "content": bankInstructions}
 
-  user = []
-  for statement in statements:
-    user.append({"role": "user", "content": statement})
+    user = []
+    for statement in statements:
+        user.append({"role": "user", "content": statement})
 
 
-  completion = client.chat.completions.create(
+    completion = client.chat.completions.create(
     model="gpt-4-turbo",
     messages=[system]+user,
+    )
 
-  )
-
-  return completion.choices[0].message.content
+    return completion.choices[0].message.content
 
 
 
@@ -517,24 +517,33 @@ def advice():
 
         text_input = request.form.get("text")
 
-        if current == categories:
-            if text_input:
-                session["conversation"].append({"role": "user", "content": str(banksss)})
-                session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT AND MAKE SURE ITS STRUCTURED WELL SO THE USER CAN READ WELL INSTEAD OF A BIG PARAGRAPH! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
-                session["conversation"].append({"role": "user", "content": text_input})
+        chat = ""
+        if categories:
+            chat = financial_advisor(categories)
+            print("---------")
+            print(categories)
+            session["conversation"].append({"role": "assistant", "content": chat})
 
-        if current != categories:
-            session["conversation"].append({"role": "system", "content": bankInstructions})
-            current = categories
+        if text_input:
+            session["conversation"].append({"role": "system", "content": "respond to everything kindly as a financial advisor. and look at past chats to answer questions.  ANSWER IN HTML FORMAT! NEVER DISCOURAGE SENDING BANK STATEMENTS. ENCOURAGE SENDING BANK STATEMENTS FOR BEST ANALYSIS. ALWAYS REFER TO THE BANK STATEMENTS IF THERE ARE ANY SENT AND ALWAYS LOOK AT THE DATES AND ORDER THE TRANSACTIONS USING THE DATE. THE ORDER THIS LIST IS IN SHOULD GO BY DATE NOT THE ACTUAL ORDER. ALWAYS ASK IF THE USER HAS ANY QUESTIONS LEFT"})
+            session["conversation"].append({"role": "user", "content": text_input})
 
         try:
-            completion = client.chat.completions.create(
-                model="gpt-4-turbo",
-                messages=session["conversation"]
-            )
-            ai_response = completion.choices[0].message.content.replace("```", "")
-            ai_response = ai_response.replace("html", "")
-            session["conversation"].append({"role": "assistant", "content": ai_response})
+            if len(chat) > 3:
+                ai_response = chat.replace("```", "")
+                ai_response = ai_response.replace("html", "")
+            else:
+                transactions_text = ""
+                for statement in bank_statement:
+                    transactions_text += f"{statement} \n"
+
+                completion = client.chat.completions.create(
+                    model="gpt-4-turbo",
+                    messages=[{"role": "user", "content": str(transactions_text)}] + session["conversation"]
+                )
+                ai_response = completion.choices[0].message.content.replace("```", "")
+                ai_response = ai_response.replace("html", "")
+                session["conversation"].append({"role": "assistant", "content": ai_response})
 
             session.modified = True
 
