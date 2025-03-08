@@ -1,1 +1,1 @@
-gunicorn --workers 1 -k gevent --timeout 1200 main:app
+gunicorn --workers 3 -k gevent --timeout 5000 main:app
