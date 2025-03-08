@@ -284,7 +284,7 @@ def getStatements(file):
             })
 
         else:
-            amount = order.get("debit_amount")
+            amount = f"-{order.get("debit_amount")}"
             category = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[{"role": "system", "content": classifyW},
