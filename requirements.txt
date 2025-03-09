@@ -14,3 +14,4 @@ pypdf==5.2.0
 requests==2.32.3
 Flask-Bcrypt==1.0.1
 SQLAlchemy==2.0.38
+celery==5.4.0
