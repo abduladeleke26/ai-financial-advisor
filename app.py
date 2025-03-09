@@ -11,9 +11,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from sqlalchemy.orm.attributes import flag_modified
 import os
+from celery import Celery
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///database.db")
+app.config['CELERY_BROKER_URL'] = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+app.config['CELERY_RESULT_BACKEND'] = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
+
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
+
 app.secret_key = "your-secret-key"
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -241,12 +249,21 @@ def financial_advisor(statements):
     return completion.choices[0].message.content
 
 
+@celery.task
+def categorize_transaction(description, classify_type):
+    response = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[{"role": "system", "content": classify_type},
+                  {"role": "user", "content": description}]
+    )
+    return response.choices[0].message.content
+
+
 def getStatements(file):
     url = "https://api.veryfi.com/api/v8/partner/bank-statements"
     encoded_file = base64.b64encode(file.read()).decode("utf-8")
-    payload = json.dumps({
-        "file_data": encoded_file
-    })
+    payload = json.dumps({"file_data": encoded_file})
+
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -255,48 +272,37 @@ def getStatements(file):
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
-
-    response = response.json()
-
-    transactions = response.get("transactions")
+    transactions = response.json().get("transactions", [])
 
     statements = []
-
     category_totals = defaultdict(float)
+    async_results = []
+
     for order in transactions:
+        description = order.get("description")
 
         if order.get("credit_amount"):
             amount = float(order["credit_amount"])
-            category = client.chat.completions.create(
-                model="gpt-4-turbo",
-                messages=[{"role": "system", "content": classifyD},
-                          {"role": "user", "content": order.get("description")}]
-            )
-            category = category.choices[0].message.content.replace("Gas & Fuel", "Transportation")
-            statements.append({
-                "description": order.get("description"),
-                "amount": amount,
-                "date": order.get("date"),
-                "type": "Deposit",
-                "category": category,
-            })
-
+            task = categorize_transaction.delay(description, classifyD)
+            async_results.append((task, description, amount, "Deposit"))
         else:
             amount = -float(order.get("debit_amount"))
-            category = client.chat.completions.create(
-                model="gpt-4-turbo",
-                messages=[{"role": "system", "content": classifyW},
-                          {"role": "user", "content": order.get("description")}]
-            )
+            task = categorize_transaction.delay(description, classifyW)
+            async_results.append((task, description, amount, "Withdrawal"))
 
-            category = category.choices[0].message.content
-            statements.append({
-                "description": order.get("description"),
-                "amount": amount,
-                "date": order.get("date"),
-                "type": "Withdrawal",
-                "category": category,
-            })
+
+    for task, description, amount, txn_type in async_results:
+        category = task.get(timeout=30)
+        if txn_type == "Withdrawal":
+            category = category.replace("Gas & Fuel", "Transportation")
+
+        statements.append({
+            "description": description,
+            "amount": amount,
+            "date": order.get("date"),
+            "type": txn_type,
+            "category": category,
+        })
 
         category_totals[category] += round(amount, 2)
 
