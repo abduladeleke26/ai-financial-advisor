@@ -1,3 +1,6 @@
+import time
+from openai import OpenAI
+from pypdf import PdfReader
 from flask import Flask, render_template, request, session, jsonify, flash, redirect, url_for
 import base64
 import json
