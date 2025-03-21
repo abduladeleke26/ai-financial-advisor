@@ -263,8 +263,9 @@ def getStatements(file):
     statements = []
 
     category_totals = defaultdict(float)
+    x = 0
     for order in transactions:
-
+        x += 1
         if order.get("credit_amount"):
             amount = float(order["credit_amount"])
             category = client.chat.completions.create(
@@ -299,7 +300,7 @@ def getStatements(file):
             })
 
         category_totals[category] += round(amount, 2)
-
+        print(x)
     return statements, category_totals
 
 
