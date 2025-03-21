@@ -301,7 +301,6 @@ def getStatements(file):
 
         category_totals[category] += round(amount, 2)
         print(x)
-        time.sleep(5)
     return statements, category_totals
 
 
