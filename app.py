@@ -330,7 +330,7 @@ def home():
             model="gpt-4-turbo",
             messages=[
                 {"role": "system",
-                 "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
+                 "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements (make sure it will take a while depending on how many statements there are) or connect to their bank for a faster analysis using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
                 {"role": "system",
                  "content": f"the user name is {name}. welcome the user back. tell the user to either continue asking questions or to either upload bank statements or connect to their bank for advice on a different account"},
                 {"role": "user", "content": "hello"}
@@ -365,7 +365,7 @@ def home():
             model="gpt-4-turbo",
             messages=[
                 {"role": "system",
-                 "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements or connect to their bank using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
+                 "content": "youre a financial advisor greeting the user. tell the user to either upload bank statements (make sure it will take a while depending on how many statements there are) or connect to their bank for a faster analysis using the buttons below to begin. DO NOT MAKE A FORM OR A BUTTON. ONLY TEXT. respond in html <body>format with <h1>"},
                 {"role": "user", "content": "hello"}
             ],
         )
